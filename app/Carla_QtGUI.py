@@ -67,6 +67,7 @@ class MyMainWindow(QMainWindow):
         # 设置一个 QTimer，每2秒检查一次连接状态
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_world_data)
+        self.timer.timeout.connect(self.refresh_ifcarconnect_data)
         self.timer.start(2000)  # 每2000毫秒（2秒）触发一次
         # 按钮点击事件连接
         self.ui.pushButton_chooseCARLA.clicked.connect(self.choose_carla_path) # 选择carla路径
@@ -321,6 +322,43 @@ class MyMainWindow(QMainWindow):
             print(f"🚗 已运行: {' '.join(command)}")
         except Exception as e:
             print(f"❌ 启动失败: {e}")
+
+    def refresh_ifcarconnect_data(self):
+        # 连接成功时的样式：蓝色背景，加粗字体
+        connected_style = """
+            font-weight: bold; 
+            color: #0078d7; 
+            padding: 5px; 
+            border: 1px solid #a0c8e8; 
+            border-radius: 4px; 
+            background-color: #e7f3fe;
+        """
+        # 未连接时的样式：灰色背景，普通字体
+        disconnected_style = """
+            font-weight: normal; 
+            color: #555; 
+            padding: 5px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            background-color: #f0f0f0;
+        """
+
+        self.ui.label_current_car_info.setText("当前未连接车辆")
+        self.ui.label_current_car_info.setStyleSheet(disconnected_style)
+        if self.car is not None:
+            try:
+                # 获取当前世界中所有actor的id
+                current_actor_ids = [actor.id for actor in self.world.get_actors()]
+                if self.car.id not in current_actor_ids:
+                    self.car = None
+                else:
+                    rolename = self.car.attributes.get('role_name', 'N/A')
+                    actor_id = self.car.id
+                    car_info=(f"{rolename}  id={actor_id}")
+                    self.ui.label_current_car_info.setText(f"当前控制车辆: {car_info}")
+                    self.ui.label_current_car_info.setStyleSheet(connected_style)
+            except Exception as e:
+                self.car = None
 
     def refresh_car_data(self,refresh_Rolename = False):
         world = self.world
