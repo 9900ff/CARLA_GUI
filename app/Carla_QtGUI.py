@@ -373,22 +373,6 @@ class MyMainWindow(QMainWindow):
                 actor_id = actor.id
                 display_text = f"{rolename} id={actor_id}"
                 self.ui.comboBox_carRolename.addItem(display_text,actor_id)
-        # 更新actor信息
-
-        # 已连接到的车辆信息
-        car_info = "无"
-        if self.car is not None:
-            try:
-                # 获取当前世界中所有actor的id
-                current_actor_ids = [actor.id for actor in self.world.get_actors()]
-                if self.car.id not in current_actor_ids:
-                    self.car = None
-                else:
-                    rolename = self.car.attributes.get('role_name', 'N/A')
-                    actor_id = self.car.id
-                    car_info=(f"{rolename}  id={actor_id}")
-            except Exception as e:
-                self.car = None
 
         # 所有actor信息
         actor_data = []
