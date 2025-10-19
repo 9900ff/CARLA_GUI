@@ -401,9 +401,6 @@ class MyMainWindow(QMainWindow):
 
         # 最终显示内容
         info_lines = [
-            "当前已连接车辆：",
-            car_info,"\n"
-            "当前全部actor：",
             all_actor_info
         ]
         all_info = "\n".join(info_lines)
