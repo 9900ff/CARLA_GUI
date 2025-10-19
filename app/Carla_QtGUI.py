@@ -11,8 +11,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QThread
 import carla
-# from QT_CARLA.CARLA_tools import Ui_MainWindow
-from QT_CARLA.test_ui import Ui_MainWindow
+from QT_CARLA.CARLA_tools import Ui_MainWindow
 
 def load_config():
     """
