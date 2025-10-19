@@ -183,31 +183,54 @@ class Ui_MainWindow(object):
         main_layout.addWidget(spawn_group)
 
         actor_list_group = QGroupBox("车辆列表与操作")
-        list_layout = QVBoxLayout(actor_list_group)
+        # 使用水平布局实现 1x2 结构
+        list_layout = QHBoxLayout(actor_list_group)
 
-        top_grid_layout = QGridLayout()
+        # --- 左侧栏: 控制按钮 ---
+        left_controls_widget = QWidget()
+        left_v_layout = QVBoxLayout(left_controls_widget)
+        left_v_layout.setContentsMargins(0, 0, 10, 0)  # 右边距，与右侧状态栏分隔
+
+        left_v_layout.addWidget(QLabel("选择车辆:"))
+
+        # 用于 ComboBox 和刷新按钮的水平布局
+        combo_refresh_layout = QHBoxLayout()
         self.comboBox_carRolename = QComboBox()
-        self.pushButton_refreshCars = QPushButton()
+        self.pushButton_refreshCars = QPushButton("\u21BB")  # 刷新图标 (↻)
+
+        # 设置刷新按钮的样式，使其看起来像一个图标按钮
+        font = QtGui.QFont("Arial", 12)
+        self.pushButton_refreshCars.setFont(font)
+        self.pushButton_refreshCars.setFixedSize(QtCore.QSize(36, 36))
+
+        combo_refresh_layout.addWidget(self.comboBox_carRolename)
+        combo_refresh_layout.addWidget(self.pushButton_refreshCars)
+
+        left_v_layout.addLayout(combo_refresh_layout)
+
+        # 垂直添加其他操作按钮
         self.pushButton_connectCar = QPushButton()
         self.pushButton_clearActor_roleneme = QPushButton()
+        left_v_layout.addWidget(self.pushButton_connectCar)
+        left_v_layout.addWidget(self.pushButton_clearActor_roleneme)
 
-        top_grid_layout.addWidget(QLabel("选择车辆:"), 0, 0)
-        top_grid_layout.addWidget(self.comboBox_carRolename, 0, 1)
-        top_grid_layout.addWidget(self.pushButton_refreshCars, 0, 2)
-        top_grid_layout.addWidget(self.pushButton_connectCar, 1, 1)
-        top_grid_layout.addWidget(self.pushButton_clearActor_roleneme, 1, 2)
-        list_layout.addLayout(top_grid_layout)
+        left_v_layout.addStretch()  # 添加伸缩，使控件保持在顶部
+
+        # --- 右侧栏: 状态显示 ---
+        right_status_widget = QWidget()
+        right_v_layout = QVBoxLayout(right_status_widget)
+        right_v_layout.setContentsMargins(0, 0, 0, 0)
 
         self.label_current_car_info = QLabel()
-        self.label_current_car_info.setStyleSheet(
-            "font-weight: bold; color: #555; padding: 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f0f0f0;")
-        self.label_current_car_info.setAlignment(QtCore.Qt.AlignCenter)
-        list_layout.addWidget(self.label_current_car_info)
+        self.textBrowser_carState = QTextBrowser()  # 移除最小高度限制，使其可自由伸展
 
-        list_layout.addWidget(QLabel("车辆状态:"))
-        self.textBrowser_carState = QTextBrowser()
-        self.textBrowser_carState.setMinimumHeight(120)
-        list_layout.addWidget(self.textBrowser_carState)
+        right_v_layout.addWidget(self.label_current_car_info)
+        right_v_layout.addWidget(QLabel("场景中全部车辆:"))
+        right_v_layout.addWidget(self.textBrowser_carState)
+
+        # 将左右两栏添加到主布局，并设置伸缩比例
+        list_layout.addWidget(left_controls_widget, 1)
+        list_layout.addWidget(right_status_widget, 2)  # 右侧空间占比更大
 
         main_layout.addWidget(actor_list_group)
         parent_layout.addWidget(main_group)
@@ -345,7 +368,7 @@ class Ui_MainWindow(object):
         self.pushButton_hideSpeed.setText(_translate("MainWindow", "关闭速度显示"))
         self.pushButton_spawnCar.setText(_translate("MainWindow", "生成车辆"))
         self.pushButton_spawnCarPygame.setText(_translate("MainWindow", "在pygame\n生成车辆"))
-        self.pushButton_refreshCars.setText(_translate("MainWindow", "刷新列表"))
+        self.pushButton_refreshCars.setToolTip(_translate("MainWindow", "刷新车辆列表"))
         self.pushButton_connectCar.setText(_translate("MainWindow", "连接车辆"))
         self.pushButton_clearActor_roleneme.setText(_translate("MainWindow", "清除此actor"))
         self.pushButton_setCarPose.setText(_translate("MainWindow", "移动车辆到坐标位置"))
@@ -355,6 +378,7 @@ class Ui_MainWindow(object):
         self.pushButton_SpectatorFollower_pro.setText(_translate("MainWindow", "spectator\n跟随车辆(pro)"))
         self.pushButton_setSpectatorPose.setText(_translate("MainWindow", "设置观测者位置"))
         self.label_current_car_info.setText(_translate("MainWindow", "当前未连接车辆"))
+        self.label_current_car_info.setStyleSheet("font-weight: normal; color: #555; padding: 5px; border: 1px solid #ddd; border-radius: 4px; background-color: #f0f0f0;")
 
         # --- ComboBox ---
         self.comboBox_quality.addItem(_translate("MainWindow", "Low"))
