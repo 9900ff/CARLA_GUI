@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1000, 800)
-        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 北境风版)")
+        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 最终版)")
 
         # 设置全局字体和样式
         font = QtGui.QFont("Segoe UI", 9)
@@ -69,8 +69,11 @@ class Ui_MainWindow(object):
 
     def apply_effects(self, MainWindow):
         """
-        应用紧凑布局等微调。
+        应用阴影和紧凑布局等微调。
         """
+        from PyQt5.QtWidgets import QGroupBox
+        from PyQt5.QtGui import QColor
+        from PyQt5.QtWidgets import QGraphicsDropShadowEffect
 
         def _compact_layout(widget: QWidget):
             layouts = widget.findChildren(QtWidgets.QLayout)
@@ -79,6 +82,19 @@ class Ui_MainWindow(object):
                 lay.setContentsMargins(12, 12, 12, 12)
 
         _compact_layout(MainWindow.centralWidget())
+
+        # 为面板添加柔和的阴影以增加层次感
+        def _add_shadow(w: QWidget, radius=30, offset=(0, 4), alpha=20):
+            effect = QGraphicsDropShadowEffect(w)
+            effect.setBlurRadius(radius)
+            effect.setXOffset(offset[0])
+            effect.setYOffset(offset[1])
+            effect.setColor(QColor(0, 0, 0, alpha))
+            w.setGraphicsEffect(effect)
+
+        # 只为 GroupBox (面板) 添加阴影
+        for gb in MainWindow.findChildren(QGroupBox):
+            _add_shadow(gb)
 
     def create_server_control_group(self, parent_layout):
         group = QGroupBox("CARLA 服务器")
@@ -319,16 +335,16 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
-        # --- Nord Light Theme Palette ---
-        NORD_PRIMARY = "#81A1C1"  # Calm Blue
-        NORD_PRIMARY_HOVER = "#88C0D0"  # Lighter Blue for hover
-        NORD_DANGER = "#BF616A"  # Muted Red
-        NORD_DANGER_HOVER = "#d08770"  # Orange-ish Red for hover
-        BG_WINDOW = "#ECEFF4"  # Light cool grey
-        BG_PANEL = "#FFFFFF"  # White
-        BORDER = "#D8DEE9"  # Lighter grey border
-        TEXT_PRIMARY = "#2E3440"  # Dark slate grey
-        TEXT_SECONDARY = "#4C566A"  # Lighter slate grey
+        # --- "北境之光" 配色方案 (Nord Light Theme) ---
+        NORD_PRIMARY = "#81A1C1"  # 北境蓝 (主色)
+        NORD_PRIMARY_HOVER = "#88C0D0"  # 悬停蓝
+        NORD_DANGER = "#BF616A"  # 极光红 (危险)
+        NORD_DANGER_HOVER = "#d08770"  # 悬停红
+        BG_WINDOW = "#ECEFF4"  # 雪白 (窗口背景)
+        BG_PANEL = "#FFFFFF"  # 纯白 (面板背景)
+        BORDER = "#D8DEE9"  # 冰川灰 (边框)
+        TEXT_PRIMARY = "#2E3440"  # 极夜黑 (主文字)
+        TEXT_SECONDARY = "#4C566A"  # 冰岩灰 (次文字)
 
         app_window.setStyleSheet(f"""
             QWidget {{
@@ -343,7 +359,7 @@ class Ui_MainWindow(object):
             QGroupBox {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 6px; 
+                border-radius: 8px; 
                 margin-top: 10px;
                 padding: 10px;
             }}
@@ -354,7 +370,7 @@ class Ui_MainWindow(object):
             QLineEdit, QComboBox, QTextBrowser {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 4px; padding: 6px 8px;
+                border-radius: 6px; padding: 6px 8px;
                 color: {TEXT_PRIMARY};
             }}
             QTextBrowser {{
@@ -371,7 +387,7 @@ class Ui_MainWindow(object):
                 min-height: 150px;
             }}
             QPushButton {{
-                border: 1px solid {BORDER}; border-radius: 4px;
+                border: 1px solid {BORDER}; border-radius: 6px;
                 padding: 6px 12px; background: #E5E9F0;
                 font-weight: 500;
             }}
@@ -381,12 +397,15 @@ class Ui_MainWindow(object):
             /* --- TabWidget Styles --- */
             QTabWidget::pane {{
                 border: 1px solid {BORDER};
+                border-top: none;
+                border-radius: 0 0 8px 8px;
                 background: {BG_PANEL};
             }}
             QTabBar::tab {{
                 background: {BG_WINDOW};
                 border: 1px solid {BORDER};
                 border-bottom: none;
+                border-radius: 4px 4px 0 0;
                 padding: 8px 16px;
                 font-weight: 600;
                 color: {TEXT_SECONDARY};
@@ -469,8 +488,8 @@ class Ui_MainWindow(object):
         self.pushButton_SpectatorFollower_pro.setText(_translate("MainWindow", "spectator\n跟随车辆(pro)"))
         self.pushButton_setSpectatorPose.setText(_translate("MainWindow", "设置观测者位置"))
         self.label_current_car_info.setText(_translate("MainWindow", "当前未连接车辆"))
-        # 移除此处的内联样式，让其由主样式表控制
-        # self.label_current_car_info.setStyleSheet(...)
+        self.label_current_car_info.setStyleSheet(
+            "font-weight: normal; color: #555; padding: 5px; border: 1px solid #ddd; border-radius: 4px; background-color: #f0f0f0;")
 
         self.comboBox_quality.addItems(["Low", "Epic"])
         self.rendering_mode.addItems(["正常", "离屏渲染"])
