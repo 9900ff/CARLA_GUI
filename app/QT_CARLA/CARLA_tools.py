@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1000, 900)  # 再次增加高度以容纳新控件
-        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 美化版)")
+        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺")
 
         # 设置全局字体和样式
         font = QtGui.QFont("Microsoft YaHei UI", 9)
@@ -65,6 +65,58 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.apply_macos_effects(MainWindow)  # ← 新增：应用毛玻璃、阴影、紧凑布局与配色
+
+    def apply_macos_effects(self, MainWindow):
+        """
+        不改控件名：仅对现有控件批量应用阴影、间距压缩、统一圆角等 macOS 视觉效果。
+        """
+        from PyQt5.QtWidgets import QGroupBox, QPushButton, QWidget
+        from PyQt5.QtGui import QColor
+        from PyQt5.QtWidgets import QGraphicsDropShadowEffect
+
+        # —— 1) 全局：减少组与控件之间的间距，整体更紧凑 ——
+        def _compact_layout(widget: QWidget):
+            for layout_attr in ("layout",):
+                lay = getattr(widget, layout_attr)() if hasattr(widget, layout_attr) else None
+                if lay:
+                    try:
+                        lay.setSpacing(8)
+                        lay.setContentsMargins(8, 8, 8, 8)
+                    except Exception:
+                        pass
+            for child in widget.findChildren(QWidget):
+                lay = child.layout()
+                if lay:
+                    try:
+                        lay.setSpacing(8)
+                        lay.setContentsMargins(8, 8, 8, 8)
+                    except Exception:
+                        pass
+
+        _compact_layout(MainWindow.centralWidget())
+
+        # —— 2) 阴影：GroupBox 和按钮加轻微投影（不改变名字/逻辑）——
+        def _add_shadow(w: QWidget, radius=20, offset=(0, 4), alpha=60):
+            effect = QGraphicsDropShadowEffect(w)
+            effect.setBlurRadius(radius)
+            effect.setXOffset(offset[0])
+            effect.setYOffset(offset[1])
+            effect.setColor(QColor(0, 0, 0, alpha))
+            w.setGraphicsEffect(effect)
+
+        # 给所有 GroupBox 添加阴影 & 更“卡片化”的手感
+        for gb in MainWindow.findChildren(QGroupBox):
+            _add_shadow(gb, radius=28, offset=(0, 8), alpha=55)
+
+        # 给主要按钮适度阴影（视觉浮起）
+        for btn in MainWindow.findChildren(QPushButton):
+            _add_shadow(btn, radius=18, offset=(0, 3), alpha=40)
+
+        # —— 3) 让中央区域略微“毛玻璃”观感（半透明白 + 卡片阴影已模拟毛玻璃层次）——
+        # 注：Qt 对真实背景模糊(backdrop blur)支持有限，这里通过半透明白 + 阴影获得近似 macOS 毛玻璃观感。
+        cw = MainWindow.centralWidget()
+        cw.setAutoFillBackground(False)  # 由样式表半透明呈现
 
     def create_server_control_group(self, parent_layout):
         group = QGroupBox("CARLA 服务器")
@@ -305,49 +357,141 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
-        app_window.setStyleSheet("""
-            QMainWindow, QWidget {
-                background-color: #f0f0f0;
-            }
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #ccc;
-                border-radius: 5px;
+        # —— 基础色板（macOS风）——
+        APPLE_BLUE = "#007AFF"
+        DANGER_RED = "#FF3B30"
+        BG_WIN = "#F5F5F7"  # 窗口底色（极浅灰）
+        BG_PANEL = "rgba(255,255,255,0.68)"  # 白色毛玻璃（半透明）
+        BORDER = "#D1D1D6"  # 浅灰描边
+        TEXT_PRI = "#1C1C1E"  # 主要文字
+        TEXT_SEC = "#6E6E73"  # 次级文字
+
+        app_window.setStyleSheet(f"""
+            /* —— 窗口与通用 —— */
+            QMainWindow, QWidget {{
+                background: {BG_WIN};
+                color: {TEXT_PRI};
+                font-family: "SF Pro Text", "Microsoft YaHei UI", "Segoe UI", "PingFang SC", sans-serif;
+                font-size: 13px;
+            }}
+
+            /* —— GroupBox：白色毛玻璃 + 圆角 + 轻描边 —— */
+            QGroupBox {{
+                background: {BG_PANEL};
+                border: 1px solid {BORDER};
+                border-radius: 12px;
                 margin-top: 10px;
-                padding: 10px;
-            }
-            QGroupBox::title {
+                padding: 10px 12px 12px 12px;
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
-                padding: 0 3px;
-                background-color: #f0f0f0;
-            }
-            QLabel {
-                font-weight: normal;
-            }
-            QLineEdit, QTextBrowser, QComboBox {
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                padding: 5px;
-                background-color: #ffffff;
-            }
-            QLineEdit:focus, QTextBrowser:focus {
-                border-color: #0078d7;
-            }
-            QPushButton {
-                background-color: #e0e0e0;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                padding: 8px 12px;
-                color: #333;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border-color: #999;
-            }
-            QPushButton:pressed {
-                background-color: #c0c0c0;
-            }
+                padding: 2px 6px;
+                color: {TEXT_SEC};
+                background: transparent;
+                font-weight: 600;
+            }}
+
+            /* —— 输入类：紧凑 + 轻阴影描边感 —— */
+            QLineEdit, QTextBrowser, QComboBox {{
+                background: rgba(255,255,255,0.86);
+                border: 1px solid {BORDER};
+                border-radius: 8px;
+                padding: 6px 8px;
+            }}
+            QLineEdit:focus, QTextBrowser:focus, QComboBox:focus {{
+                border: 1px solid {APPLE_BLUE};
+                outline: none;
+            }}
+            QTextBrowser {{
+                padding: 8px;
+            }}
+
+            /* —— 按钮：圆角 + macOS 蓝/灰/红 —— */
+            QPushButton {{
+                border: 1px solid {BORDER};
+                border-radius: 8px;
+                padding: 6px 12px;
+                background: rgba(255,255,255,0.86);
+            }}
+            QPushButton:hover {{
+                background: rgba(255,255,255,0.96);
+            }}
+            QPushButton:pressed {{
+                background: rgba(240,240,240,0.96);
+            }}
+
+            /* —— 语义按钮（不改名字，仅按用途着色）—— */
+            /* 启动/连接/确认一类 → Apple Blue */
+            QPushButton[text="启动 CARLA"],
+            QPushButton[text="连接 CARLA"],
+            QPushButton[text="生成车辆"],
+            QPushButton[text="移动车辆到坐标位置"],
+            QPushButton[text="设置spectator\\n到此车位置"],
+            QPushButton[text="spectator\\n跟随车辆(标准版)"],
+            QPushButton[text="spectator\\n跟随车辆(pro)"],
+            QPushButton[text="设置观测者位置"],
+            QPushButton[text="启用渲染"],
+            QPushButton[text="启用2D渲染"],
+            QPushButton[text="显示速度"] {{
+                background: {APPLE_BLUE};
+                color: white;
+                border: 1px solid rgba(0,0,0,0);
+            }}
+            QPushButton[text="启动 CARLA"]:hover,
+            QPushButton[text="连接 CARLA"]:hover,
+            QPushButton[text="生成车辆"]:hover,
+            QPushButton[text="移动车辆到坐标位置"]:hover,
+            QPushButton[text="设置spectator\\n到此车位置"]:hover,
+            QPushButton[text="spectator\\n跟随车辆(标准版)"]:hover,
+            QPushButton[text="spectator\\n跟随车辆(pro)"]:hover,
+            QPushButton[text="设置观测者位置"]:hover,
+            QPushButton[text="启用渲染"]:hover,
+            QPushButton[text="启用2D渲染"]:hover,
+            QPushButton[text="显示速度"]:hover {{
+                filter: brightness(1.05);
+            }}
+
+            /* 危险/停用 → 红色 */
+            QPushButton[text="关闭 CARLA"],
+            QPushButton[text="禁用渲染"],
+            QPushButton[text="清除全部actor"],
+            QPushButton[text="清除此actor"],
+            QPushButton[text="停止spectator\\n跟随车辆"],
+            QPushButton[text="关闭速度显示"] {{
+                background: {DANGER_RED};
+                color: white;
+                border: 1px solid rgba(0,0,0,0);
+            }}
+            QPushButton[text="关闭 CARLA"]:hover,
+            QPushButton[text="禁用渲染"]:hover,
+            QPushButton[text="清除全部actor"]:hover,
+            QPushButton[text="清除此actor"]:hover,
+            QPushButton[text="停止spectator\\n跟随车辆"]:hover,
+            QPushButton[text="关闭速度显示"]:hover {{
+                filter: brightness(1.05);
+            }}
+
+            /* 次级操作（地图/天气/异步/刷新等）保持浅色 */
+            QPushButton[text="修改地图"],
+            QPushButton[text="设置天气"],
+            QPushButton[text="异步模式"],
+            QPushButton[toolTip~="刷新车辆列表"],
+            QPushButton[text="..."] {{
+                background: rgba(255,255,255,0.86);
+            }}
+
+            /* —— 分割线更轻 —— */
+            QFrame[frameShape="4"] {{  /* QFrame.HLine == 4 */
+                background: {BORDER};
+                max-height: 1px;
+            }}
+
+            /* —— 状态条 —— */
+            QStatusBar {{
+                background: rgba(255,255,255,0.72);
+                border-top: 1px solid {BORDER};
+            }}
         """)
 
     def retranslateUi(self, MainWindow):
