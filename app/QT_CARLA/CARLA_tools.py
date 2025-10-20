@@ -177,6 +177,7 @@ class Ui_MainWindow(object):
         right_v_layout = QVBoxLayout(right_status_widget)
         right_v_layout.setContentsMargins(0, 0, 0, 0)
         self.label_current_car_info = QLabel()
+        self.label_current_car_info.setObjectName("statusLabel")  # Assign objectName for styling
         self.textBrowser_carState = QTextBrowser()
         right_v_layout.addWidget(self.label_current_car_info)
         right_v_layout.addWidget(QLabel("场景中全部车辆:"))
@@ -232,11 +233,17 @@ class Ui_MainWindow(object):
 
         # --- Tab 2: 车辆控制 (合并生成和移动) ---
         vehicle_tab = QWidget()
-        vehicle_main_layout = QVBoxLayout(vehicle_tab)
+        vehicle_layout = QGridLayout(vehicle_tab)
 
-        # Group for Spawning
-        spawn_group = QGroupBox("生成车辆")
-        spawn_layout = QGridLayout(spawn_group)
+        self.label_current_car_info_vehicle = QLabel()
+        self.label_current_car_info_vehicle.setObjectName("statusLabel")
+        vehicle_layout.addWidget(self.label_current_car_info_vehicle, 0, 0, 1, 4)
+
+        # Spawning controls
+        spawn_title = QLabel("生成车辆")
+        spawn_title.setStyleSheet("font-weight: bold;")
+        vehicle_layout.addWidget(spawn_title, 1, 0, 1, 4)
+
         self.lineEdit_spawnname = QLineEdit()
         self.lineEdit_spawnX = QLineEdit();
         self.lineEdit_spawnY = QLineEdit()
@@ -246,45 +253,59 @@ class Ui_MainWindow(object):
         self.pushButton_spawnCar.setObjectName("spawnCarButton")
         self.pushButton_spawnCarPygame = QPushButton()
 
-        spawn_layout.addWidget(QLabel("Role Name:"), 0, 0);
-        spawn_layout.addWidget(self.lineEdit_spawnname, 0, 1, 1, 3)
-        spawn_layout.addWidget(QLabel("X:"), 1, 0);
-        spawn_layout.addWidget(self.lineEdit_spawnX, 1, 1)
-        spawn_layout.addWidget(QLabel("Y:"), 1, 2);
-        spawn_layout.addWidget(self.lineEdit_spawnY, 1, 3)
-        spawn_layout.addWidget(QLabel("Z:"), 2, 0);
-        spawn_layout.addWidget(self.lineEdit_spawnZ, 2, 1)
-        spawn_layout.addWidget(QLabel("Yaw:"), 2, 2);
-        spawn_layout.addWidget(self.lineEdit_spawnYaw, 2, 3)
-        spawn_layout.addWidget(self.pushButton_spawnCar, 3, 0, 1, 2)
-        spawn_layout.addWidget(self.pushButton_spawnCarPygame, 3, 2, 1, 2)
-        vehicle_main_layout.addWidget(spawn_group)
+        vehicle_layout.addWidget(QLabel("Role Name:"), 2, 0);
+        vehicle_layout.addWidget(self.lineEdit_spawnname, 2, 1, 1, 3)
+        vehicle_layout.addWidget(QLabel("X:"), 3, 0);
+        vehicle_layout.addWidget(self.lineEdit_spawnX, 3, 1)
+        vehicle_layout.addWidget(QLabel("Y:"), 3, 2);
+        vehicle_layout.addWidget(self.lineEdit_spawnY, 3, 3)
+        vehicle_layout.addWidget(QLabel("Z:"), 4, 0);
+        vehicle_layout.addWidget(self.lineEdit_spawnZ, 4, 1)
+        vehicle_layout.addWidget(QLabel("Yaw:"), 4, 2);
+        vehicle_layout.addWidget(self.lineEdit_spawnYaw, 4, 3)
+        vehicle_layout.addWidget(self.pushButton_spawnCar, 5, 0, 1, 2)
+        vehicle_layout.addWidget(self.pushButton_spawnCarPygame, 5, 2, 1, 2)
 
-        # Group for Moving
-        move_group = QGroupBox("移动当前车辆")
-        move_layout = QGridLayout(move_group)
+        # Separator
+        line = QFrame();
+        line.setFrameShape(QFrame.HLine);
+        line.setFrameShadow(QFrame.Sunken)
+        vehicle_layout.addWidget(line, 6, 0, 1, 4)
+
+        # Moving controls
+        move_title = QLabel("移动当前车辆")
+        move_title.setStyleSheet("font-weight: bold;")
+        vehicle_layout.addWidget(move_title, 7, 0, 1, 4)
+
         self.pushButton_setCarPose = QPushButton()
         self.pushButton_setCarPose.setObjectName("setCarPoseButton")
         self.lineEdit_moveX = QLineEdit();
         self.lineEdit_moveY = QLineEdit()
         self.lineEdit_moveZ = QLineEdit();
         self.lineEdit_moveYaw = QLineEdit()
-        move_layout.addWidget(QLabel("X:"), 0, 0);
-        move_layout.addWidget(self.lineEdit_moveX, 0, 1)
-        move_layout.addWidget(QLabel("Y:"), 0, 2);
-        move_layout.addWidget(self.lineEdit_moveY, 0, 3)
-        move_layout.addWidget(QLabel("Z:"), 1, 0);
-        move_layout.addWidget(self.lineEdit_moveZ, 1, 1)
-        move_layout.addWidget(QLabel("Yaw:"), 1, 2);
-        move_layout.addWidget(self.lineEdit_moveYaw, 1, 3)
-        move_layout.addWidget(self.pushButton_setCarPose, 2, 0, 1, 4)
-        vehicle_main_layout.addWidget(move_group)
+        vehicle_layout.addWidget(QLabel("X:"), 8, 0);
+        vehicle_layout.addWidget(self.lineEdit_moveX, 8, 1)
+        vehicle_layout.addWidget(QLabel("Y:"), 8, 2);
+        vehicle_layout.addWidget(self.lineEdit_moveY, 8, 3)
+        vehicle_layout.addWidget(QLabel("Z:"), 9, 0);
+        vehicle_layout.addWidget(self.lineEdit_moveZ, 9, 1)
+        vehicle_layout.addWidget(QLabel("Yaw:"), 9, 2);
+        vehicle_layout.addWidget(self.lineEdit_moveYaw, 9, 3)
+        vehicle_layout.addWidget(self.pushButton_setCarPose, 10, 0, 1, 4)
 
-        vehicle_main_layout.addStretch(1)  # Add stretch to keep groups compact at the top
+        vehicle_layout.setRowStretch(11, 1)  # Add stretch to keep groups compact at the top
 
         # --- Tab 3: 观察者控制 ---
         spectator_tab = QWidget()
-        spectator_layout = QGridLayout(spectator_tab)
+        spectator_main_layout = QVBoxLayout(spectator_tab)
+
+        self.label_current_car_info_spectator = QLabel()
+        self.label_current_car_info_spectator.setObjectName("statusLabel")
+        spectator_main_layout.addWidget(self.label_current_car_info_spectator)
+
+        spectator_controls_widget = QWidget()
+        spectator_layout = QGridLayout(spectator_controls_widget)
+
         self.pushButton_setSpectatorPose_tocar = QPushButton()
         self.pushButton_setSpectatorPose_tocar.setObjectName("spectatorToCarButtonSpecial")
         self.pushButton_SpectatorFollower_easy = QPushButton()
@@ -300,10 +321,10 @@ class Ui_MainWindow(object):
         spectator_layout.addWidget(self.pushButton_SpectatorFollower_easy, 2, 0, 1, 2)
         spectator_layout.addWidget(self.pushButton_SpectatorFollower_pro, 2, 2, 1, 2)
 
-        line = QFrame();
-        line.setFrameShape(QFrame.HLine);
-        line.setFrameShadow(QFrame.Sunken)
-        spectator_layout.addWidget(line, 3, 0, 1, 4)
+        line2 = QFrame();
+        line2.setFrameShape(QFrame.HLine);
+        line2.setFrameShadow(QFrame.Sunken)
+        spectator_layout.addWidget(line2, 3, 0, 1, 4)
 
         self.pushButton_setSpectatorPose = QPushButton()
         self.pushButton_setSpectatorPose.setObjectName("setSpectatorPoseButtonSpecial")
@@ -321,7 +342,9 @@ class Ui_MainWindow(object):
         spectator_layout.addWidget(QLabel("Yaw:"), 6, 2);
         spectator_layout.addWidget(self.lineEdit_spectatorYaw, 6, 3)
         spectator_layout.addWidget(self.pushButton_setSpectatorPose, 7, 0, 1, 4)
-        spectator_tab.setLayout(spectator_layout)
+
+        spectator_main_layout.addWidget(spectator_controls_widget)
+        spectator_main_layout.addStretch(1)  # Add stretch to prevent label expansion
 
         tab_widget.addTab(world_tab, "世界")
         tab_widget.addTab(vehicle_tab, "车辆")
@@ -462,6 +485,15 @@ class Ui_MainWindow(object):
             QFrame[frameShape="4"] {{ border: none; background: {BORDER}; max-height: 1px; }}
             QStatusBar {{ background: {BG_PANEL}; border-top: 1px solid {BORDER}; }}
             QLabel {{ color: {TEXT_SECONDARY}; }}
+            QLabel[objectName="statusLabel"] {{
+                background-color: #E5E9F0;
+                color: {TEXT_SECONDARY};
+                border: 1px solid {BORDER};
+                border-radius: 4px;
+                padding: 5px;
+                qproperty-alignment: 'AlignCenter';
+                font-weight: bold;
+            }}
             QLabel[text="选择车辆:"], QLabel[text="场景中全部车辆:"] {{
                  color: {TEXT_PRIMARY}; font-weight: bold;
             }}
@@ -482,7 +514,7 @@ class Ui_MainWindow(object):
         self.pushButton_showSpeed.setText(_translate("MainWindow", "显示速度"))
         self.pushButton_hideSpeed.setText(_translate("MainWindow", "关闭速度显示"))
         self.pushButton_spawnCar.setText(_translate("MainWindow", "生成车辆"))
-        self.pushButton_spawnCarPygame.setText(_translate("MainWindow", "在pygame\n生成车辆"))
+        self.pushButton_spawnCarPygame.setText(_translate("MainWindow", "pygame生成"))
         self.pushButton_refreshCars.setToolTip(_translate("MainWindow", "刷新车辆列表"))
         self.pushButton_connectCar.setText(_translate("MainWindow", "连接车辆"))
         self.pushButton_clearActor_roleneme.setText(_translate("MainWindow", "清除此actor"))
@@ -492,9 +524,11 @@ class Ui_MainWindow(object):
         self.pushButton_StopSpectatorFollower.setText(_translate("MainWindow", "停止spectator\n跟随车辆"))
         self.pushButton_SpectatorFollower_pro.setText(_translate("MainWindow", "spectator\n跟随车辆(pro)"))
         self.pushButton_setSpectatorPose.setText(_translate("MainWindow", "设置观测者位置"))
+
+        # Set initial text for all status labels
         self.label_current_car_info.setText(_translate("MainWindow", "当前未连接车辆"))
-        self.label_current_car_info.setStyleSheet(
-            "font-weight: normal; color: #555; padding: 5px; border: 1px solid #ddd; border-radius: 4px; background-color: #f0f0f0;")
+        self.label_current_car_info_vehicle.setText(_translate("MainWindow", "当前未连接车辆"))
+        self.label_current_car_info_spectator.setText(_translate("MainWindow", "当前未连接车辆"))
 
         self.comboBox_quality.addItems(["Low", "Epic"])
         self.rendering_mode.addItems(["正常", "离屏渲染"])
