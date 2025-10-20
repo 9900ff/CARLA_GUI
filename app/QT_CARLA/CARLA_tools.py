@@ -71,6 +71,7 @@ class Ui_MainWindow(object):
     def apply_macos_effects(self, MainWindow):
         """
         应用阴影、紧凑布局等 macOS 视觉效果。
+        在扁平风格中，此函数主要负责布局微调，阴影效果被禁用。
         """
         from PyQt5.QtWidgets import QGroupBox, QPushButton, QWidget
         from PyQt5.QtGui import QColor
@@ -84,20 +85,13 @@ class Ui_MainWindow(object):
 
         _compact_layout(MainWindow.centralWidget())
 
-        def _add_shadow(w: QWidget, radius=20, offset=(0, 4), alpha=60):
-            effect = QGraphicsDropShadowEffect(w)
-            effect.setBlurRadius(radius)
-            effect.setXOffset(offset[0])
-            effect.setYOffset(offset[1])
-            effect.setColor(QColor(0, 0, 0, alpha))
-            w.setGraphicsEffect(effect)
-
-        for gb in MainWindow.findChildren(QGroupBox):
-            _add_shadow(gb, radius=28, offset=(0, 6), alpha=50)
-
-        for btn in MainWindow.findChildren(QPushButton):
-            if not btn.objectName().endswith("Special"):  # 只为非特殊按钮添加默认阴影
-                _add_shadow(btn, radius=12, offset=(0, 2), alpha=35)
+        # 在扁平化设计中禁用阴影
+        # def _add_shadow(w: QWidget, radius=20, offset=(0, 4), alpha=30):
+        #     ...
+        # for gb in MainWindow.findChildren(QGroupBox):
+        #     ...
+        # for btn in MainWindow.findChildren(QPushButton):
+        #     ...
 
     def create_server_control_group(self, parent_layout):
         group = QGroupBox("CARLA 服务器")
@@ -238,7 +232,7 @@ class Ui_MainWindow(object):
         self.pushButton_refreshCars.setFixedSize(QtCore.QSize(36, 36))
 
         self.pushButton_connectCar = QPushButton()
-        self.pushButton_connectCar.setObjectName("connectVehicleButton")  # 为连接按钮添加 objectName
+        self.pushButton_connectCar.setObjectName("connectVehicleButton")
         self.pushButton_clearActor_roleneme = QPushButton()
         self.pushButton_clearActor_roleneme.setObjectName("clearActorButton")
 
@@ -247,8 +241,8 @@ class Ui_MainWindow(object):
         left_grid_layout.addWidget(self.pushButton_refreshCars, 1, 1)
         left_grid_layout.addWidget(self.pushButton_connectCar, 2, 0, 1, 2)
         left_grid_layout.addWidget(self.pushButton_clearActor_roleneme, 3, 0, 1, 2)
-        left_grid_layout.setColumnStretch(0, 1)  # 让第一列（包含下拉框）伸展
-        left_grid_layout.setRowStretch(4, 1)  # 添加伸缩，使控件保持在顶部
+        left_grid_layout.setColumnStretch(0, 1)
+        left_grid_layout.setRowStretch(4, 1)
 
         # --- 右侧栏: 状态显示 ---
         right_status_widget = QWidget();
@@ -260,8 +254,9 @@ class Ui_MainWindow(object):
         right_v_layout.addWidget(QLabel("场景中全部车辆:"))
         right_v_layout.addWidget(self.textBrowser_carState)
 
-        list_layout.addWidget(left_controls_widget, 1)
-        list_layout.addWidget(right_status_widget, 2)
+        # 调整伸缩比例以加宽左侧
+        list_layout.addWidget(left_controls_widget, 2)
+        list_layout.addWidget(right_status_widget, 3)
         main_layout.addWidget(actor_list_group)
         parent_layout.addWidget(main_group)
 
@@ -339,83 +334,110 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
-        # --- 莫兰迪色板 ---
-        MORANDI_BLUE = "#769aab"  # 灰蓝色 (主要)
-        MORANDI_RED = "#c09393"  # 豆沙红 (危险)
-        BG_WIN = "#F7F7F7"  # 柔和白
-        BG_PANEL = "rgba(255,255,255,0.80)"  # 半透明面板
-        BORDER = "#E0E0E0"  # 浅灰边框
-        TEXT_PRI = "#4A4A4A"  # 深灰色文字
-        TEXT_SEC = "#888888"  # 中灰色文字
-        FOCUS_BLUE = "#8aa9ba"  # 聚焦时的边框色
+        # --- 扁平化设计色板 (Flat Design) ---
+        FLAT_PRIMARY = "#26a69a"  # 青色
+        FLAT_PRIMARY_HOVER = "#2bbbad"
+        FLAT_DANGER = "#ef5350"  # 红色
+        FLAT_DANGER_HOVER = "#f0625f"
+        BG_WINDOW = "#ECEFF1"  # 窗口背景 (浅灰)
+        BG_PANEL = "#FFFFFF"  # 面板背景 (白色)
+        BORDER = "#CFD8DC"  # 边框
+        TEXT_PRIMARY = "#37474F"  # 主要文字 (深灰)
+        TEXT_SECONDARY = "#78909C"  # 次要文字 (中灰)
 
         app_window.setStyleSheet(f"""
             QWidget {{
                 background-color: transparent;
-                color: {TEXT_PRI};
+                color: {TEXT_PRIMARY};
                 font-family: "SF Pro Text", "Microsoft YaHei UI", sans-serif;
                 font-size: 13px;
             }}
             QMainWindow {{
-                background: {BG_WIN};
+                background: {BG_WINDOW};
             }}
             QGroupBox {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 12px;
+                border-radius: 8px; /* 扁平风格圆角更小 */
                 margin-top: 10px;
                 padding: 10px;
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin; subcontrol-position: top left;
-                padding: 2px 6px; color: {TEXT_SEC}; font-weight: 600;
+                padding: 2px 6px; color: {TEXT_SECONDARY}; font-weight: 600;
             }}
-            QLineEdit, QTextBrowser, QComboBox {{
-                background: rgba(255,255,255,0.9);
+            QLineEdit, QComboBox {{
+                background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 8px; padding: 6px 8px;
+                border-radius: 6px; padding: 6px 8px;
+                color: {TEXT_PRIMARY};
             }}
-            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {FOCUS_BLUE}; }}
+            QTextBrowser {{
+                background: {BG_PANEL};
+                border: 1px solid {BORDER};
+                border-radius: 6px; padding: 6px 8px;
+                color: {TEXT_PRIMARY};
+                max-height: 200px; /* 限制车辆列表最大高度 */
+            }}
+            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {FLAT_PRIMARY}; }}
+            QComboBox::drop-down {{
+                border-left: 1px solid {BORDER};
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {BG_PANEL};
+                border: 1px solid {BORDER};
+                selection-background-color: {FLAT_PRIMARY};
+                min-height: 150px; /* 确保下拉列表有足够高度 */
+            }}
             QPushButton {{
-                border: 1px solid {BORDER}; border-radius: 8px;
-                padding: 6px 12px; background: rgba(255,255,255,0.9);
+                border: 1px solid {BORDER}; border-radius: 6px;
+                padding: 6px 12px; background: {BG_PANEL};
+                font-weight: 500;
             }}
-            QPushButton:hover {{ background: rgba(245,245,245,0.95); }}
-            QPushButton:pressed {{ background: rgba(235,235,235,0.95); }}
+            QPushButton:hover {{ background: #F5F5F5; }}
+            QPushButton:pressed {{ background: #E0E0E0; }}
 
-            /* --- 语义按钮：莫兰迪色系 --- */
             #startCarlaButton, #connectCarlaButton, #spawnCarButton, #setCarPoseButton,
             #connectVehicleButton,
             #spectatorToCarButtonSpecial, #followEasyButtonSpecial, #followProButtonSpecial,
             #setSpectatorPoseButtonSpecial, #renderButtonSpecial, #hud2dButtonSpecial, #showSpeedButtonSpecial
             {{
-                background: {MORANDI_BLUE}; color: white; border: none;
+                background-color: {FLAT_PRIMARY};
+                color: white; border: none; font-weight: bold;
             }}
             #startCarlaButton:hover, #connectCarlaButton:hover, #spawnCarButton:hover, #setCarPoseButton:hover,
             #connectVehicleButton:hover,
             #spectatorToCarButtonSpecial:hover, #followEasyButtonSpecial:hover, #followProButtonSpecial:hover,
             #setSpectatorPoseButtonSpecial:hover, #renderButtonSpecial:hover, #hud2dButtonSpecial:hover, #showSpeedButtonSpecial:hover
              {{
-                background: #8aa9ba;
+                background-color: {FLAT_PRIMARY_HOVER};
             }}
 
             #closeCarlaButton, #clearAllActorButton, #clearActorButton,
             #stopFollowButtonSpecial, #noRenderButtonSpecial, #hideSpeedButtonSpecial
             {{
-                background: {MORANDI_RED}; color: white; border: none;
+                background-color: {FLAT_DANGER};
+                color: white; border: none; font-weight: bold;
             }}
             #closeCarlaButton:hover, #clearAllActorButton:hover, #clearActorButton:hover,
             #stopFollowButtonSpecial:hover, #noRenderButtonSpecial:hover, #hideSpeedButtonSpecial:hover
             {{
-                background: #d0a3a3;
+                background-color: {FLAT_DANGER_HOVER};
             }}
 
             #refreshCarsButton {{
-                font-size: 16px;
+                background-color: transparent; border: none;
+            }}
+            #refreshCarsButton:hover {{
+                color: {FLAT_PRIMARY};
             }}
 
             QFrame[frameShape="4"] {{ border: none; background: {BORDER}; max-height: 1px; }}
             QStatusBar {{ background: {BG_PANEL}; border-top: 1px solid {BORDER}; }}
+            QLabel {{ color: {TEXT_SECONDARY}; }}
+            QLabel[text="选择车辆:"], QLabel[text="场景中全部车辆:"] {{
+                 color: {TEXT_PRIMARY}; font-weight: bold;
+            }}
         """)
 
     def retranslateUi(self, MainWindow):
