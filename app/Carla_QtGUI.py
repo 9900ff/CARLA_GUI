@@ -14,6 +14,8 @@ from PyQt5.QtCore import QThread
 import carla
 from QT_CARLA.CARLA_tools import Ui_MainWindow
 
+# 脚本所在的目录 (app 文件夹)
+project_root = os.path.dirname(os.path.abspath(__file__))
 
 def find_config_path():
     """
@@ -43,26 +45,25 @@ def load_config():
 
 
 class MyMainWindow(QMainWindow):
-    def __init__(self, carla_path='D:\CARLA0.9.15\WindowsNoEditor\CarlaUE4.exe'):
+    def __init__(self):
         # 初始化
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        # 设置CARLA对象
-        self.carla_path = carla_path  # 默认路径，可以修改
-        print("初始化carla_path:", self.carla_path)
-        self.ip = None
-        self.port = None
+        # 初始化路径变量
+        self.carla_path = ""
+        self.python_path = ""
+
         self.client = None
         self.world = None
         self.map = None
         self.car = None
         self.follower_thread = None
         self.speed_thread = None
-        # 初始化qt界面部分内容
-        self.ui.textBrowser_chooseCARLA.setText(self.carla_path)
-        # 加载备忘录内容
-        self.load_memo()
+
+        # 从 config.ini 加载所有设置并应用到UI
+        self.load_and_apply_settings()
+
         # 设置一个 QTimer，每2秒检查一次连接状态
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_world_data)
@@ -103,6 +104,45 @@ class MyMainWindow(QMainWindow):
         self.ui.pushButton_hideSpeed.clicked.connect(self.close_vehicle_speed)  # 禁用速度显示
 
         self.ui.pushButton_saveMemo.clicked.connect(self.save_memo)  # 保存备忘录
+
+    def load_and_apply_settings(self):
+        """从 config.ini 加载所有配置并设置到UI。"""
+        try:
+            config = load_config()
+
+            # 加载 CarlaSettings
+            if config.has_section('CarlaSettings'):
+                self.carla_path = config.get('CarlaSettings', 'carla_path', fallback='')
+                self.python_path = config.get('CarlaSettings', 'python_path', fallback=sys.executable)
+
+                self.ui.textBrowser_chooseCARLA.setText(self.carla_path)
+                self.ui.lineEdit_pythonPath.setText(self.python_path)
+
+                spawn_x = config.get('CarlaSettings', 'spawn_x', fallback='0')
+                spawn_y = config.get('CarlaSettings', 'spawn_y', fallback='0')
+                spawn_z = config.get('CarlaSettings', 'spawn_z', fallback='0')
+                spawn_yaw = config.get('CarlaSettings', 'spawn_yaw', fallback='0')
+
+                self.ui.lineEdit_spawnX.setText(spawn_x)
+                self.ui.lineEdit_spawnY.setText(spawn_y)
+                self.ui.lineEdit_spawnZ.setText(spawn_z)
+                self.ui.lineEdit_spawnYaw.setText(spawn_yaw)
+                self.ui.lineEdit_moveX.setText(spawn_x)
+                self.ui.lineEdit_moveY.setText(spawn_y)
+                self.ui.lineEdit_moveZ.setText(spawn_z)
+                self.ui.lineEdit_moveYaw.setText(spawn_yaw)
+
+            # 加载 Memo
+            if config.has_section('Memo') and config.has_option('Memo', 'notes'):
+                notes = config.get('Memo', 'notes')
+                self.ui.textEdit_memo.setPlainText(notes)
+
+            self.statusBar().showMessage("✅ 所有配置已成功加载。", 2000)
+            print("初始化carla_path:", self.carla_path)
+            print("初始化python_path:", self.python_path)
+
+        except Exception as e:
+            self.statusBar().showMessage(f"❌ 加载配置失败: {e}", 5000)
 
     def choose_carla_path(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "选择 CARLA 启动程序", "", "可执行文件 (*.exe)")
@@ -168,7 +208,7 @@ class MyMainWindow(QMainWindow):
             if self.speed_thread and self.speed_thread.isRunning():
                 self.close_vehicle_speed()
 
-            self.client = self.world = self.map = self.car = None
+            self.client = self.world = self.map = self.car = self.follower_thread = None
 
             self.ui.textBrowser_connectState.setText("未连接")
             self.ui.textBrowser_carState.setText("无")
@@ -437,7 +477,24 @@ class MyMainWindow(QMainWindow):
             self.statusBar().showMessage("❌ 请先连接到一辆车", 3000)
             return
         try:
-            # ... (Implementation remains unchanged)
+            if self.car is None:
+                print("⚠️ 当前没有车辆")
+                return
+
+            # 获取车辆的变换（位置 + 朝向）
+            transform = self.car.get_transform()
+            location = transform.location
+            rotation = transform.rotation
+
+            # 设置观察者稍微在车辆后方和上方的位置
+            spectator = self.world.get_spectator()
+            spectator_location = location + carla.Location(x=-6 * math.cos(math.radians(rotation.yaw)),
+                                                           y=-6 * math.sin(math.radians(rotation.yaw)),
+                                                           z=3)
+            spectator_rotation = carla.Rotation(pitch=-15, yaw=rotation.yaw, roll=0)
+            spectator_transform = carla.Transform(spectator_location, spectator_rotation)
+
+            spectator.set_transform(spectator_transform)
             self.statusBar().showMessage("✅ 观察者已移动到车辆后方。", 2000)
         except Exception as e:
             self.statusBar().showMessage(f"❌ 设置观察者失败: {e}", 5000)
@@ -447,7 +504,17 @@ class MyMainWindow(QMainWindow):
             self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
             return
         try:
-            # ... (Implementation remains unchanged)
+            # 获取变换（位置 + 朝向）
+            x = float(self.ui.lineEdit_spectatorX.text())
+            y = float(self.ui.lineEdit_spectatorY.text())
+            z = float(self.ui.lineEdit_spectatorZ.text())
+            yaw = float(self.ui.lineEdit_spectatorYaw.text())
+            move_pose = carla.Transform(
+                carla.Location(x=x, y=y, z=z),  # z=0.3 避免车辆陷入地面
+                carla.Rotation(yaw=yaw)
+            )
+            spectator = self.world.get_spectator()
+            spectator.set_transform(move_pose)
             self.statusBar().showMessage("✅ 观察者位置已更新。", 2000)
         except Exception as e:
             self.statusBar().showMessage(f"❌ 设置观察者失败: {e}", 5000)
@@ -482,8 +549,27 @@ class MyMainWindow(QMainWindow):
             self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
             return
         weather_type = self.ui.comboBox_weather.currentText()
-        # ... (rest of implementation)
-        self.statusBar().showMessage(f"✅ 已设置天气为: {weather_type}", 2000)
+        weather_dict = {
+            "晴朗 正午": carla.WeatherParameters.ClearNoon,
+            "多云 正午": carla.WeatherParameters.CloudyNoon,
+            "湿润 正午": carla.WeatherParameters.WetNoon,
+            "湿润多云 正午": carla.WeatherParameters.WetCloudyNoon,
+            "小雨 正午": carla.WeatherParameters.SoftRainNoon,
+            "中雨 正午": carla.WeatherParameters.MidRainyNoon,
+            "大雨 正午": carla.WeatherParameters.HardRainNoon,
+            "晴朗 日出": carla.WeatherParameters.ClearSunset,
+            "多云 日出": carla.WeatherParameters.CloudySunset,
+            "湿润 日出": carla.WeatherParameters.WetSunset,
+            "小雨 日出": carla.WeatherParameters.SoftRainSunset,
+            "中雨 日出": carla.WeatherParameters.MidRainSunset,
+            "大雨 日出": carla.WeatherParameters.HardRainSunset
+        }
+        # 设置天气
+        if weather_type in weather_dict:
+            self.world.set_weather(weather_dict[weather_type])
+            self.statusBar().showMessage(f"✅ 已设置天气为: {weather_type}", 2000)
+        else:
+            self.statusBar().showMessage(f"❌ 无效天气类型: {weather_type}", 5000)
 
     def open_render(self):
         if not self.world:
@@ -842,22 +928,7 @@ class SpeedDisplayThread(QThread):
 
 
 if __name__ == '__main__':
-    app_config  = load_config()
-    carla_path = app_config.get('CarlaSettings', 'carla_path', fallback='')
-    spawn_coords = {k: app_config.get('CarlaSettings', k) for k in ['Spawn_x', 'Spawn_y', 'Spawn_z', 'Spawn_yaw']}
-
     app = QApplication(sys.argv)
-    mainWin = MyMainWindow(carla_path=carla_path)
-
-    mainWin.ui.lineEdit_spawnX.setText(spawn_coords['Spawn_x'])
-    mainWin.ui.lineEdit_spawnY.setText(spawn_coords['Spawn_y'])
-    mainWin.ui.lineEdit_spawnZ.setText(spawn_coords['Spawn_z'])
-    mainWin.ui.lineEdit_spawnYaw.setText(spawn_coords['Spawn_yaw'])
-
-    mainWin.ui.lineEdit_moveX.setText(spawn_coords['Spawn_x'])
-    mainWin.ui.lineEdit_moveY.setText(spawn_coords['Spawn_y'])
-    mainWin.ui.lineEdit_moveZ.setText(spawn_coords['Spawn_z'])
-    mainWin.ui.lineEdit_moveYaw.setText(spawn_coords['Spawn_yaw'])
-
+    mainWin = MyMainWindow()
     mainWin.show()
     sys.exit(app.exec_())
