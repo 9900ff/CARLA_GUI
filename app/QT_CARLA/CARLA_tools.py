@@ -192,7 +192,7 @@ class Ui_MainWindow(object):
 
         tab_widget = QTabWidget()
 
-        # --- Tab 1: 世界控制 (Moved from left panel) ---
+        # --- Tab 1: 世界控制 ---
         world_tab = QWidget()
         layout = QGridLayout(world_tab)
         self.comboBox_map = QComboBox()
@@ -230,9 +230,13 @@ class Ui_MainWindow(object):
         layout.addWidget(self.pushButton_hideSpeed, 6, 1)
         world_tab.setLayout(layout)
 
-        # --- Tab 2: 生成车辆 ---
-        spawn_tab = QWidget()
-        spawn_layout = QGridLayout(spawn_tab)
+        # --- Tab 2: 车辆控制 (合并生成和移动) ---
+        vehicle_tab = QWidget()
+        vehicle_main_layout = QVBoxLayout(vehicle_tab)
+
+        # Group for Spawning
+        spawn_group = QGroupBox("生成车辆")
+        spawn_layout = QGridLayout(spawn_group)
         self.lineEdit_spawnname = QLineEdit()
         self.lineEdit_spawnX = QLineEdit();
         self.lineEdit_spawnY = QLineEdit()
@@ -254,11 +258,11 @@ class Ui_MainWindow(object):
         spawn_layout.addWidget(self.lineEdit_spawnYaw, 2, 3)
         spawn_layout.addWidget(self.pushButton_spawnCar, 3, 0, 1, 2)
         spawn_layout.addWidget(self.pushButton_spawnCarPygame, 3, 2, 1, 2)
-        spawn_tab.setLayout(spawn_layout)
+        vehicle_main_layout.addWidget(spawn_group)
 
-        # --- Tab 3: 移动车辆 ---
-        move_tab = QWidget()
-        move_layout = QGridLayout(move_tab)
+        # Group for Moving
+        move_group = QGroupBox("移动当前车辆")
+        move_layout = QGridLayout(move_group)
         self.pushButton_setCarPose = QPushButton()
         self.pushButton_setCarPose.setObjectName("setCarPoseButton")
         self.lineEdit_moveX = QLineEdit();
@@ -274,9 +278,11 @@ class Ui_MainWindow(object):
         move_layout.addWidget(QLabel("Yaw:"), 1, 2);
         move_layout.addWidget(self.lineEdit_moveYaw, 1, 3)
         move_layout.addWidget(self.pushButton_setCarPose, 2, 0, 1, 4)
-        move_tab.setLayout(move_layout)
+        vehicle_main_layout.addWidget(move_group)
 
-        # --- Tab 4: 观察者控制 ---
+        vehicle_main_layout.addStretch(1)  # Add stretch to keep groups compact at the top
+
+        # --- Tab 3: 观察者控制 ---
         spectator_tab = QWidget()
         spectator_layout = QGridLayout(spectator_tab)
         self.pushButton_setSpectatorPose_tocar = QPushButton()
@@ -318,8 +324,7 @@ class Ui_MainWindow(object):
         spectator_tab.setLayout(spectator_layout)
 
         tab_widget.addTab(world_tab, "世界")
-        tab_widget.addTab(spawn_tab, "生成")
-        tab_widget.addTab(move_tab, "移动")
+        tab_widget.addTab(vehicle_tab, "车辆")
         tab_widget.addTab(spectator_tab, "观察者")
 
         main_layout.addWidget(tab_widget)
@@ -406,7 +411,7 @@ class Ui_MainWindow(object):
                 border: 1px solid {BORDER};
                 border-bottom: none;
                 border-radius: 4px 4px 0 0;
-                padding: 8px 16px;
+                padding: 8px 24px;
                 font-weight: 600;
                 color: {TEXT_SECONDARY};
             }}
