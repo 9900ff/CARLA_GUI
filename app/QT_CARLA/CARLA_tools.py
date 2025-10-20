@@ -10,18 +10,18 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLineEdit, QLabel, QComboBox, QTextBrowser, QGroupBox,
-    QFrame, QSizePolicy
+    QFrame, QSizePolicy, QTabWidget
 )
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1000, 900)
+        MainWindow.resize(1000, 850)  # 优化后可以减少一些高度
         MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 美化版)")
 
         # 设置全局字体和样式
-        font = QtGui.QFont("Microsoft YaHei UI", 9)
+        font = QtGui.QFont("Segoe UI", 9)
         MainWindow.setFont(font)
 
         self.centralwidget = QWidget(MainWindow)
@@ -49,10 +49,10 @@ class Ui_MainWindow(object):
         right_layout = QVBoxLayout(right_panel)
         right_layout.setSpacing(15)
 
-        # Actor 生成与控制
-        self.create_actor_control_group(right_layout)
-        # 车辆/观察者控制
-        self.create_vehicle_spectator_group(right_layout)
+        # Actor 列表与操作
+        self.create_actor_list_group(right_layout)
+        # 车辆与观察者控制 (使用 TabWidget)
+        self.create_actor_control_tabs(right_layout)
 
         right_layout.addStretch(1)
 
@@ -66,16 +66,13 @@ class Ui_MainWindow(object):
         self.apply_stylesheet(MainWindow)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-        self.apply_macos_effects(MainWindow)
+        self.apply_effects(MainWindow)
 
-    def apply_macos_effects(self, MainWindow):
+    def apply_effects(self, MainWindow):
         """
-        应用阴影、紧凑布局等 macOS 视觉效果。
-        在扁平风格中，此函数主要负责布局微调，阴影效果被禁用。
+        应用紧凑布局等微调。
+        在 Windows 10 风格中，阴影效果被禁用。
         """
-        from PyQt5.QtWidgets import QGroupBox, QPushButton, QWidget
-        from PyQt5.QtGui import QColor
-        from PyQt5.QtWidgets import QGraphicsDropShadowEffect
 
         def _compact_layout(widget: QWidget):
             layouts = widget.findChildren(QtWidgets.QLayout)
@@ -84,14 +81,6 @@ class Ui_MainWindow(object):
                 lay.setContentsMargins(10, 10, 10, 10)
 
         _compact_layout(MainWindow.centralWidget())
-
-        # 在扁平化设计中禁用阴影
-        # def _add_shadow(w: QWidget, radius=20, offset=(0, 4), alpha=30):
-        #     ...
-        # for gb in MainWindow.findChildren(QGroupBox):
-        #     ...
-        # for btn in MainWindow.findChildren(QPushButton):
-        #     ...
 
     def create_server_control_group(self, parent_layout):
         group = QGroupBox("CARLA 服务器")
@@ -186,35 +175,7 @@ class Ui_MainWindow(object):
 
         parent_layout.addWidget(group)
 
-    def create_actor_control_group(self, parent_layout):
-        main_group = QGroupBox("Actor 管理")
-        main_layout = QVBoxLayout(main_group)
-
-        spawn_group = QGroupBox("生成车辆")
-        spawn_layout = QGridLayout(spawn_group)
-        self.lineEdit_spawnname = QLineEdit()
-        self.lineEdit_spawnX = QLineEdit();
-        self.lineEdit_spawnY = QLineEdit()
-        self.lineEdit_spawnZ = QLineEdit();
-        self.lineEdit_spawnYaw = QLineEdit()
-        self.pushButton_spawnCar = QPushButton()
-        self.pushButton_spawnCar.setObjectName("spawnCarButton")
-        self.pushButton_spawnCarPygame = QPushButton()
-
-        spawn_layout.addWidget(QLabel("Role Name:"), 0, 0);
-        spawn_layout.addWidget(self.lineEdit_spawnname, 0, 1, 1, 3)
-        spawn_layout.addWidget(QLabel("X:"), 1, 0);
-        spawn_layout.addWidget(self.lineEdit_spawnX, 1, 1)
-        spawn_layout.addWidget(QLabel("Y:"), 1, 2);
-        spawn_layout.addWidget(self.lineEdit_spawnY, 1, 3)
-        spawn_layout.addWidget(QLabel("Z:"), 2, 0);
-        spawn_layout.addWidget(self.lineEdit_spawnZ, 2, 1)
-        spawn_layout.addWidget(QLabel("Yaw:"), 2, 2);
-        spawn_layout.addWidget(self.lineEdit_spawnYaw, 2, 3)
-        spawn_layout.addWidget(self.pushButton_spawnCar, 3, 0, 1, 2)
-        spawn_layout.addWidget(self.pushButton_spawnCarPygame, 3, 2, 1, 2)
-        main_layout.addWidget(spawn_group)
-
+    def create_actor_list_group(self, parent_layout):
         actor_list_group = QGroupBox("车辆列表与操作")
         list_layout = QHBoxLayout(actor_list_group)
 
@@ -254,37 +215,65 @@ class Ui_MainWindow(object):
         right_v_layout.addWidget(QLabel("场景中全部车辆:"))
         right_v_layout.addWidget(self.textBrowser_carState)
 
-        # 调整伸缩比例以加宽左侧
         list_layout.addWidget(left_controls_widget, 2)
         list_layout.addWidget(right_status_widget, 3)
-        main_layout.addWidget(actor_list_group)
-        parent_layout.addWidget(main_group)
+        parent_layout.addWidget(actor_list_group)
 
-    def create_vehicle_spectator_group(self, parent_layout):
-        group = QGroupBox("车辆/观察者控制")
-        main_v_layout = QVBoxLayout(group)
+    def create_actor_control_tabs(self, parent_layout):
+        main_group = QGroupBox("车辆与观察者控制")
+        main_layout = QVBoxLayout(main_group)
 
-        move_car_group = QGroupBox("移动当前车辆")
-        move_car_layout = QGridLayout(move_car_group)
+        tab_widget = QTabWidget()
+
+        # --- Tab 1: 生成车辆 ---
+        spawn_tab = QWidget()
+        spawn_layout = QGridLayout(spawn_tab)
+        self.lineEdit_spawnname = QLineEdit()
+        self.lineEdit_spawnX = QLineEdit();
+        self.lineEdit_spawnY = QLineEdit()
+        self.lineEdit_spawnZ = QLineEdit();
+        self.lineEdit_spawnYaw = QLineEdit()
+        self.pushButton_spawnCar = QPushButton()
+        self.pushButton_spawnCar.setObjectName("spawnCarButton")
+        self.pushButton_spawnCarPygame = QPushButton()
+
+        spawn_layout.addWidget(QLabel("Role Name:"), 0, 0);
+        spawn_layout.addWidget(self.lineEdit_spawnname, 0, 1, 1, 3)
+        spawn_layout.addWidget(QLabel("X:"), 1, 0);
+        spawn_layout.addWidget(self.lineEdit_spawnX, 1, 1)
+        spawn_layout.addWidget(QLabel("Y:"), 1, 2);
+        spawn_layout.addWidget(self.lineEdit_spawnY, 1, 3)
+        spawn_layout.addWidget(QLabel("Z:"), 2, 0);
+        spawn_layout.addWidget(self.lineEdit_spawnZ, 2, 1)
+        spawn_layout.addWidget(QLabel("Yaw:"), 2, 2);
+        spawn_layout.addWidget(self.lineEdit_spawnYaw, 2, 3)
+        spawn_layout.addWidget(self.pushButton_spawnCar, 3, 0, 1, 2)
+        spawn_layout.addWidget(self.pushButton_spawnCarPygame, 3, 2, 1, 2)
+        spawn_tab.setLayout(spawn_layout)
+
+        # --- Tab 2: 移动车辆 ---
+        move_tab = QWidget()
+        move_layout = QGridLayout(move_tab)
         self.pushButton_setCarPose = QPushButton()
         self.pushButton_setCarPose.setObjectName("setCarPoseButton")
         self.lineEdit_moveX = QLineEdit();
         self.lineEdit_moveY = QLineEdit()
         self.lineEdit_moveZ = QLineEdit();
         self.lineEdit_moveYaw = QLineEdit()
-        move_car_layout.addWidget(QLabel("X:"), 0, 0);
-        move_car_layout.addWidget(self.lineEdit_moveX, 0, 1)
-        move_car_layout.addWidget(QLabel("Y:"), 0, 2);
-        move_car_layout.addWidget(self.lineEdit_moveY, 0, 3)
-        move_car_layout.addWidget(QLabel("Z:"), 1, 0);
-        move_car_layout.addWidget(self.lineEdit_moveZ, 1, 1)
-        move_car_layout.addWidget(QLabel("Yaw:"), 1, 2);
-        move_car_layout.addWidget(self.lineEdit_moveYaw, 1, 3)
-        move_car_layout.addWidget(self.pushButton_setCarPose, 2, 0, 1, 4)
-        main_v_layout.addWidget(move_car_group)
+        move_layout.addWidget(QLabel("X:"), 0, 0);
+        move_layout.addWidget(self.lineEdit_moveX, 0, 1)
+        move_layout.addWidget(QLabel("Y:"), 0, 2);
+        move_layout.addWidget(self.lineEdit_moveY, 0, 3)
+        move_layout.addWidget(QLabel("Z:"), 1, 0);
+        move_layout.addWidget(self.lineEdit_moveZ, 1, 1)
+        move_layout.addWidget(QLabel("Yaw:"), 1, 2);
+        move_layout.addWidget(self.lineEdit_moveYaw, 1, 3)
+        move_layout.addWidget(self.pushButton_setCarPose, 2, 0, 1, 4)
+        move_tab.setLayout(move_layout)
 
-        spectator_group = QGroupBox("观察者控制")
-        spectator_layout = QGridLayout(spectator_group)
+        # --- Tab 3: 观察者控制 ---
+        spectator_tab = QWidget()
+        spectator_layout = QGridLayout(spectator_tab)
         self.pushButton_setSpectatorPose_tocar = QPushButton()
         self.pushButton_setSpectatorPose_tocar.setObjectName("spectatorToCarButtonSpecial")
         self.pushButton_SpectatorFollower_easy = QPushButton()
@@ -321,8 +310,17 @@ class Ui_MainWindow(object):
         spectator_layout.addWidget(QLabel("Yaw:"), 6, 2);
         spectator_layout.addWidget(self.lineEdit_spectatorYaw, 6, 3)
         spectator_layout.addWidget(self.pushButton_setSpectatorPose, 7, 0, 1, 4)
-        main_v_layout.addWidget(spectator_group)
-        parent_layout.addWidget(group)
+        spectator_tab.setLayout(spectator_layout)
+
+        tab_widget.addTab(spawn_tab, "生成")
+        tab_widget.addTab(move_tab, "移动")
+        tab_widget.addTab(spectator_tab, "观察者")
+
+        main_layout.addWidget(tab_widget)
+        parent_layout.addWidget(main_group)
+
+    # --- The old create_actor_control_group and create_vehicle_spectator_group are now obsolete ---
+    # They are replaced by create_actor_list_group and create_actor_control_tabs
 
     def setup_menubar_statusbar(self, MainWindow):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -334,22 +332,23 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
-        # --- 扁平化设计色板 (Flat Design) ---
-        FLAT_PRIMARY = "#26a69a"  # 青色
-        FLAT_PRIMARY_HOVER = "#2bbbad"
-        FLAT_DANGER = "#ef5350"  # 红色
-        FLAT_DANGER_HOVER = "#f0625f"
-        BG_WINDOW = "#ECEFF1"  # 窗口背景 (浅灰)
-        BG_PANEL = "#FFFFFF"  # 面板背景 (白色)
-        BORDER = "#CFD8DC"  # 边框
-        TEXT_PRIMARY = "#37474F"  # 主要文字 (深灰)
-        TEXT_SECONDARY = "#78909C"  # 次要文字 (中灰)
+        # --- Windows 10 Style Color Palette ---
+        WIN_BLUE = "#0078D4"
+        WIN_BLUE_HOVER = "#106EBE"
+        WIN_RED = "#D13438"
+        WIN_RED_HOVER = "#B12226"
+        BG_WINDOW = "#F3F3F3"
+        BG_PANEL = "#FFFFFF"
+        BORDER = "#E0E0E0"
+        INPUT_BORDER_HOVER = "#7A7A7A"
+        TEXT_PRIMARY = "#201F1E"
+        TEXT_SECONDARY = "#605E5C"
 
         app_window.setStyleSheet(f"""
             QWidget {{
                 background-color: transparent;
                 color: {TEXT_PRIMARY};
-                font-family: "SF Pro Text", "Microsoft YaHei UI", sans-serif;
+                font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
                 font-size: 13px;
             }}
             QMainWindow {{
@@ -358,7 +357,7 @@ class Ui_MainWindow(object):
             QGroupBox {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 8px; /* 扁平风格圆角更小 */
+                border-radius: 4px; 
                 margin-top: 10px;
                 padding: 10px;
             }}
@@ -366,43 +365,63 @@ class Ui_MainWindow(object):
                 subcontrol-origin: margin; subcontrol-position: top left;
                 padding: 2px 6px; color: {TEXT_SECONDARY}; font-weight: 600;
             }}
-            QLineEdit, QComboBox {{
+            QLineEdit, QComboBox, QTextBrowser {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 6px; padding: 6px 8px;
+                border-radius: 4px; padding: 6px 8px;
                 color: {TEXT_PRIMARY};
             }}
             QTextBrowser {{
-                background: {BG_PANEL};
-                border: 1px solid {BORDER};
-                border-radius: 6px; padding: 6px 8px;
-                color: {TEXT_PRIMARY};
                 max-height: 200px; /* 限制车辆列表最大高度 */
             }}
-            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {FLAT_PRIMARY}; }}
+            QLineEdit:hover, QComboBox:hover {{
+                border: 1px solid {INPUT_BORDER_HOVER};
+            }}
+            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {WIN_BLUE}; }}
             QComboBox::drop-down {{
                 border-left: 1px solid {BORDER};
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_PANEL};
                 border: 1px solid {BORDER};
-                selection-background-color: {FLAT_PRIMARY};
+                selection-background-color: {WIN_BLUE};
                 min-height: 150px; /* 确保下拉列表有足够高度 */
             }}
             QPushButton {{
-                border: 1px solid {BORDER}; border-radius: 6px;
-                padding: 6px 12px; background: {BG_PANEL};
+                border: 1px solid #ACACAC; border-radius: 4px;
+                padding: 6px 12px; background: #F0F0F0;
                 font-weight: 500;
             }}
-            QPushButton:hover {{ background: #F5F5F5; }}
-            QPushButton:pressed {{ background: #E0E0E0; }}
+            QPushButton:hover {{ background: #E0E0E0; border-color: #909090; }}
+            QPushButton:pressed {{ background: #D0D0D0; }}
+
+            /* --- TabWidget Styles --- */
+            QTabWidget::pane {{
+                border: 1px solid {BORDER};
+                border-top: none;
+                background: {BG_PANEL};
+            }}
+            QTabBar::tab {{
+                background: #F0F0F0;
+                border: 1px solid {BORDER};
+                border-bottom: none;
+                padding: 8px 16px;
+                font-weight: 500;
+            }}
+            QTabBar::tab:selected {{
+                background: {BG_PANEL};
+                border-bottom: 1px solid {BG_PANEL};
+            }}
+            QTabBar::tab:!selected:hover {{
+                background: #E0E0E0;
+            }}
 
             #startCarlaButton, #connectCarlaButton, #spawnCarButton, #setCarPoseButton,
             #connectVehicleButton,
             #spectatorToCarButtonSpecial, #followEasyButtonSpecial, #followProButtonSpecial,
             #setSpectatorPoseButtonSpecial, #renderButtonSpecial, #hud2dButtonSpecial, #showSpeedButtonSpecial
             {{
-                background-color: {FLAT_PRIMARY};
+                background-color: {WIN_BLUE};
                 color: white; border: none; font-weight: bold;
             }}
             #startCarlaButton:hover, #connectCarlaButton:hover, #spawnCarButton:hover, #setCarPoseButton:hover,
@@ -410,26 +429,26 @@ class Ui_MainWindow(object):
             #spectatorToCarButtonSpecial:hover, #followEasyButtonSpecial:hover, #followProButtonSpecial:hover,
             #setSpectatorPoseButtonSpecial:hover, #renderButtonSpecial:hover, #hud2dButtonSpecial:hover, #showSpeedButtonSpecial:hover
              {{
-                background-color: {FLAT_PRIMARY_HOVER};
+                background-color: {WIN_BLUE_HOVER};
             }}
 
             #closeCarlaButton, #clearAllActorButton, #clearActorButton,
             #stopFollowButtonSpecial, #noRenderButtonSpecial, #hideSpeedButtonSpecial
             {{
-                background-color: {FLAT_DANGER};
+                background-color: {WIN_RED};
                 color: white; border: none; font-weight: bold;
             }}
             #closeCarlaButton:hover, #clearAllActorButton:hover, #clearActorButton:hover,
             #stopFollowButtonSpecial:hover, #noRenderButtonSpecial:hover, #hideSpeedButtonSpecial:hover
             {{
-                background-color: {FLAT_DANGER_HOVER};
+                background-color: {WIN_RED_HOVER};
             }}
 
             #refreshCarsButton {{
                 background-color: transparent; border: none;
             }}
             #refreshCarsButton:hover {{
-                color: {FLAT_PRIMARY};
+                color: {WIN_BLUE};
             }}
 
             QFrame[frameShape="4"] {{ border: none; background: {BORDER}; max-height: 1px; }}
