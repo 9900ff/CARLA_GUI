@@ -323,41 +323,57 @@ class MyMainWindow(QMainWindow):
             print(f"❌ 启动失败: {e}")
 
     def refresh_ifcarconnect_data(self):
-        # 连接成功时的样式：蓝色背景，加粗字体
+        # 连接成功时的样式
         connected_style = """
-            font-weight: bold; 
-            color: #0078d7; 
-            padding: 5px; 
-            border: 1px solid #a0c8e8; 
-            border-radius: 4px; 
-            background-color: #e7f3fe;
+            background-color: #A3BE8C; /* NORD_GREEN */
+            color: #2E3440; /* TEXT_PRIMARY */
+            border: 1px solid #A3BE8C;
+            border-radius: 4px;
+            padding: 5px;
+            qproperty-alignment: 'AlignCenter';
+            font-weight: bold;
         """
-        # 未连接时的样式：灰色背景，普通字体
+        # 未连接时的样式
         disconnected_style = """
-            font-weight: normal; 
-            color: #555; 
-            padding: 5px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            background-color: #f0f0f0;
+            background-color: #E5E9F0;
+            color: #4C566A; /* TEXT_SECONDARY */
+            border: 1px solid #D8DEE9; /* BORDER */
+            border-radius: 4px;
+            padding: 5px;
+            qproperty-alignment: 'AlignCenter';
+            font-weight: bold;
         """
 
-        self.ui.label_current_car_info.setText("当前未连接车辆")
-        self.ui.label_current_car_info.setStyleSheet(disconnected_style)
+        # 获取所有需要更新的状态标签
+        status_labels = [
+            self.ui.label_current_car_info,
+            self.ui.label_current_car_info_vehicle,
+            self.ui.label_current_car_info_spectator
+        ]
+
+        car_is_valid = False
+        car_info_text = "当前未连接车辆"
+
+        # 检查车辆是否有效
         if self.car is not None:
             try:
-                # 获取当前世界中所有actor的id
                 current_actor_ids = [actor.id for actor in self.world.get_actors()]
-                if self.car.id not in current_actor_ids:
-                    self.car = None
-                else:
+                if self.car.id in current_actor_ids:
+                    car_is_valid = True
                     rolename = self.car.attributes.get('role_name', 'N/A')
                     actor_id = self.car.id
-                    car_info=(f"{rolename}  id={actor_id}")
-                    self.ui.label_current_car_info.setText(f"当前控制车辆: {car_info}")
-                    self.ui.label_current_car_info.setStyleSheet(connected_style)
+                    car_info_text = f"当前控制车辆: {rolename} id={actor_id}"
+                else:
+                    self.car = None
             except Exception as e:
+                print(f"刷新车辆连接状态时出错: {e}")
                 self.car = None
+
+        # 根据车辆是否有效，一次性更新所有标签
+        current_style = connected_style if car_is_valid else disconnected_style
+        for label in status_labels:
+            label.setText(car_info_text)
+            label.setStyleSheet(current_style)
 
     def refresh_car_data(self,refresh_Rolename = False):
         world = self.world
