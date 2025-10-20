@@ -74,6 +74,7 @@ class MyMainWindow(QMainWindow):
     def connect_signals(self):
         """将所有UI元素的信号连接到槽函数。"""
         self.ui.pushButton_chooseCARLA.clicked.connect(self.choose_carla_path)  # 选择carla路径
+        self.ui.pushButton_choosePythonPath.clicked.connect(self.choose_python_path)
         self.ui.pushButton_startCARLA.clicked.connect(self.start_carla_clicked)  # 启动carla
         self.ui.pushButton_closeCARLA.clicked.connect(self.close_carla_clicked)  # 关闭carla
         self.ui.pushButton_connectCARLA.clicked.connect(self.connect_carla_clicked)  # 连接carla
@@ -104,24 +105,33 @@ class MyMainWindow(QMainWindow):
         self.ui.pushButton_saveMemo.clicked.connect(self.save_memo)  # 保存备忘录
 
     def choose_carla_path(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "选择 CARLA 启动程序", "", "可执行文件 (*.exe);;所有文件 (*)")
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择 CARLA 启动程序", "", "可执行文件 (*.exe)")
         if file_path:
             self.ui.textBrowser_chooseCARLA.setText(file_path)
             self.carla_path = file_path
+            self.save_path_to_config('carla_path', file_path)
 
-            try:
-                config_path = find_config_path()
-                config = configparser.ConfigParser()
-                config.read(config_path, encoding='utf-8')
-                if not config.has_section('CarlaSettings'):
-                    config.add_section('CarlaSettings')
-                config.set('CarlaSettings', 'carla_path', file_path)
-                with open(config_path, 'w', encoding='utf-8') as configfile:
-                    config.write(configfile)
-                self.statusBar().showMessage("✅ CARLA 路径已更新并保存。", 3000)
-            except Exception as e:
-                print(f"❌ 保存 CARLA 路径失败: {e}")
-                self.statusBar().showMessage(f"❌ 保存 CARLA 路径失败: {e}", 5000)
+    def choose_python_path(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择 Python 解释器", "", "可执行文件 (python.exe)")
+        if file_path:
+            self.ui.lineEdit_pythonPath.setText(file_path)
+            self.python_path = file_path
+            self.save_path_to_config('python_path', file_path)
+
+    def save_path_to_config(self, key, value):
+        """通用函数，用于将路径保存到 config.ini。"""
+        try:
+            config_path = find_config_path()
+            config = configparser.ConfigParser()
+            config.read(config_path, encoding='utf-8')
+            if not config.has_section('CarlaSettings'):
+                config.add_section('CarlaSettings')
+            config.set('CarlaSettings', key, value)
+            with open(config_path, 'w', encoding='utf-8') as configfile:
+                config.write(configfile)
+            self.statusBar().showMessage(f"✅ {key} 路径已更新并保存。", 3000)
+        except Exception as e:
+            self.statusBar().showMessage(f"❌ 保存 {key} 失败: {e}", 5000)
 
     def start_carla_clicked(self):
         carla_path = self.carla_path
@@ -267,7 +277,11 @@ class MyMainWindow(QMainWindow):
         if not self.world:
             self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
             return
+        if not self.python_path or not os.path.exists(self.python_path):
+            self.statusBar().showMessage("❌ Python 路径无效，请在服务器设置中指定。", 5000)
+            return
         try:
+            # ... (参数获取)
             x = float(self.ui.lineEdit_spawnX.text())
             y = float(self.ui.lineEdit_spawnY.text())
             z = float(self.ui.lineEdit_spawnZ.text())
@@ -275,13 +289,23 @@ class MyMainWindow(QMainWindow):
             role_name = self.ui.lineEdit_spawnname.text() or "ego"
             current_map = self.world.get_map().name.split('/')[-1]
 
+            # 动态构建脚本路径
+            script_path = os.path.join(project_root, "spawn_car_with_GUI.py")
+            if not os.path.exists(script_path):
+                self.statusBar().showMessage(f"❌ 错误: 找不到脚本 {script_path}", 5000)
+                return
+
+            spawn_point = f"{x}, {y}, {z}, {yaw}"
             command = [
-                "python", "./app/spawn_car_with_GUI.py",
-                "--spawn_point", f"{x},{y},{z},{yaw}",
+                self.python_path, script_path,
+                "--spawn_point", spawn_point,
                 "--rolename", role_name, "--map", current_map,
                 "--host", self.ui.lineEdit_IP.text(), "--port", self.ui.lineEdit_port.text()
             ]
-            subprocess.Popen(command)
+
+            # 设置工作目录为项目根目录 (CarlaGUI)
+            working_directory = os.path.dirname(project_root)
+            subprocess.Popen(command, cwd=working_directory)
             self.statusBar().showMessage(f"🚗 已启动 Pygame 控制窗口: {role_name}", 4000)
         except Exception as e:
             self.statusBar().showMessage(f"❌ 启动 Pygame 失败: {e}", 5000)
@@ -480,10 +504,23 @@ class MyMainWindow(QMainWindow):
         self.statusBar().showMessage("✅ 已禁用渲染。", 2000)
 
     def open_HUD2d(self):
+        if not self.python_path or not os.path.exists(self.python_path):
+            self.statusBar().showMessage("❌ Python 路径无效，请在服务器设置中指定。", 5000)
+            return
+
         role_name = self.ui.lineEdit_spawnname.text()
-        command = ["./python/python.exe", "./app/no_rendering_mode.py", "--role-name", role_name]
+
+        # 动态构建脚本路径
+        script_path = os.path.join(project_root, "no_rendering_mode.py")
+        if not os.path.exists(script_path):
+            self.statusBar().showMessage(f"❌ 错误: 找不到脚本 {script_path}", 5000)
+            return
+
+        command = [self.python_path, script_path, "--role-name", role_name]
         try:
-            subprocess.Popen(command)
+            # 设置工作目录为项目根目录 (CarlaGUI)
+            working_directory = os.path.dirname(project_root)
+            subprocess.Popen(command, cwd=working_directory)
             self.statusBar().showMessage(f"🚗 已为 {role_name} 启动 2D HUD。", 3000)
         except Exception as e:
             self.statusBar().showMessage(f"❌ 启动 2D HUD 失败: {e}", 5000)

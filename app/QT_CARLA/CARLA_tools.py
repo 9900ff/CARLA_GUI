@@ -100,9 +100,15 @@ class Ui_MainWindow(object):
         group = QGroupBox("CARLA 服务器")
         layout = QGridLayout(group)
 
+        # CARLA Path
         self.pushButton_chooseCARLA = QPushButton("...")
         self.textBrowser_chooseCARLA = QLineEdit()
         self.textBrowser_chooseCARLA.setPlaceholderText("点击右侧按钮选择 CARLA.exe 路径")
+
+        # Python Path
+        self.pushButton_choosePythonPath = QPushButton("...")
+        self.lineEdit_pythonPath = QLineEdit()
+        self.lineEdit_pythonPath.setPlaceholderText("选择用于子程序的 Python.exe")
 
         self.pushButton_startCARLA = QPushButton()
         self.pushButton_startCARLA.setObjectName("startCarlaButton")
@@ -112,14 +118,20 @@ class Ui_MainWindow(object):
         self.comboBox_quality = QComboBox()
         self.rendering_mode = QComboBox()
 
-        layout.addWidget(self.textBrowser_chooseCARLA, 0, 0, 1, 2)
-        layout.addWidget(self.pushButton_chooseCARLA, 0, 2)
-        layout.addWidget(self.pushButton_startCARLA, 1, 0, 1, 3)
-        layout.addWidget(self.pushButton_closeCARLA, 2, 0, 1, 3)
-        layout.addWidget(QLabel("图形质量:"), 3, 0)
-        layout.addWidget(self.comboBox_quality, 3, 1, 1, 2)
-        layout.addWidget(QLabel("渲染模式:"), 4, 0)
-        layout.addWidget(self.rendering_mode, 4, 1, 1, 2)
+        layout.addWidget(QLabel("CARLA 路径:"), 0, 0, 1, 3)
+        layout.addWidget(self.textBrowser_chooseCARLA, 1, 0, 1, 2)
+        layout.addWidget(self.pushButton_chooseCARLA, 1, 2)
+
+        layout.addWidget(QLabel("Python 路径:"), 2, 0, 1, 3)
+        layout.addWidget(self.lineEdit_pythonPath, 3, 0, 1, 2)
+        layout.addWidget(self.pushButton_choosePythonPath, 3, 2)
+
+        layout.addWidget(self.pushButton_startCARLA, 4, 0, 1, 3)
+        layout.addWidget(self.pushButton_closeCARLA, 5, 0, 1, 3)
+        layout.addWidget(QLabel("图形质量:"), 6, 0)
+        layout.addWidget(self.comboBox_quality, 6, 1, 1, 2)
+        layout.addWidget(QLabel("渲染模式:"), 7, 0)
+        layout.addWidget(self.rendering_mode, 7, 1, 1, 2)
 
         parent_layout.addWidget(group)
 
@@ -366,8 +378,6 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1000, 26))
-        # self.menuCARLA = QtWidgets.QMenu(self.menubar)
-        # self.menubar.addAction(self.menuCARLA.menuAction())
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
@@ -571,7 +581,6 @@ class Ui_MainWindow(object):
         self.lineEdit_spectatorYaw.setText("0")
 
         self.textBrowser_carState.setHtml("<p>未连接</p>")
-        # self.menuCARLA.setTitle(_translate("MainWindow", "CARLA启动"))
 
 
 if __name__ == "__main__":
@@ -583,3 +592,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
