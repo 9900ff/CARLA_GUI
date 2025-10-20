@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1000, 800)
-        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 专业版)")
+        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 北境风版)")
 
         # 设置全局字体和样式
         font = QtGui.QFont("Segoe UI", 9)
@@ -319,17 +319,16 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
-        # --- Windows 10 Style Color Palette ---
-        WIN_BLUE = "#0078D4"
-        WIN_BLUE_HOVER = "#106EBE"
-        WIN_RED = "#D13438"
-        WIN_RED_HOVER = "#B12226"
-        BG_WINDOW = "#F3F3F3"
-        BG_PANEL = "#FFFFFF"
-        BORDER = "#E0E0E0"
-        INPUT_BORDER_HOVER = "#7A7A7A"
-        TEXT_PRIMARY = "#201F1E"
-        TEXT_SECONDARY = "#605E5C"
+        # --- Nord Light Theme Palette ---
+        NORD_PRIMARY = "#81A1C1"  # Calm Blue
+        NORD_PRIMARY_HOVER = "#88C0D0"  # Lighter Blue for hover
+        NORD_DANGER = "#BF616A"  # Muted Red
+        NORD_DANGER_HOVER = "#d08770"  # Orange-ish Red for hover
+        BG_WINDOW = "#ECEFF4"  # Light cool grey
+        BG_PANEL = "#FFFFFF"  # White
+        BORDER = "#D8DEE9"  # Lighter grey border
+        TEXT_PRIMARY = "#2E3440"  # Dark slate grey
+        TEXT_SECONDARY = "#4C566A"  # Lighter slate grey
 
         app_window.setStyleSheet(f"""
             QWidget {{
@@ -344,13 +343,13 @@ class Ui_MainWindow(object):
             QGroupBox {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
-                border-radius: 4px; 
+                border-radius: 6px; 
                 margin-top: 10px;
                 padding: 10px;
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin; subcontrol-position: top left;
-                padding: 2px 6px; color: {TEXT_SECONDARY}; font-weight: 600;
+                padding: 2px 8px; color: {TEXT_SECONDARY}; font-weight: 600;
             }}
             QLineEdit, QComboBox, QTextBrowser {{
                 background: {BG_PANEL};
@@ -359,28 +358,25 @@ class Ui_MainWindow(object):
                 color: {TEXT_PRIMARY};
             }}
             QTextBrowser {{
-                max-height: 200px; /* 限制车辆列表最大高度 */
+                max-height: 200px;
             }}
-            QLineEdit:hover, QComboBox:hover {{
-                border: 1px solid {INPUT_BORDER_HOVER};
-            }}
-            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {WIN_BLUE}; }}
+            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {NORD_PRIMARY}; }}
             QComboBox::drop-down {{
                 border-left: 1px solid {BORDER};
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_PANEL};
                 border: 1px solid {BORDER};
-                selection-background-color: {WIN_BLUE};
-                min-height: 150px; /* 确保下拉列表有足够高度 */
+                selection-background-color: {NORD_PRIMARY};
+                min-height: 150px;
             }}
             QPushButton {{
-                border: 1px solid #ACACAC; border-radius: 4px;
-                padding: 6px 12px; background: #F0F0F0;
+                border: 1px solid {BORDER}; border-radius: 4px;
+                padding: 6px 12px; background: #E5E9F0;
                 font-weight: 500;
             }}
-            QPushButton:hover {{ background: #E0E0E0; border-color: #909090; }}
-            QPushButton:pressed {{ background: #D0D0D0; }}
+            QPushButton:hover {{ background: #D8DEE9; }}
+            QPushButton:pressed {{ background: #C8CDD5; }}
 
             /* --- TabWidget Styles --- */
             QTabWidget::pane {{
@@ -388,7 +384,7 @@ class Ui_MainWindow(object):
                 background: {BG_PANEL};
             }}
             QTabBar::tab {{
-                background: #F0F0F0;
+                background: {BG_WINDOW};
                 border: 1px solid {BORDER};
                 border-bottom: none;
                 padding: 8px 16px;
@@ -400,7 +396,7 @@ class Ui_MainWindow(object):
                 color: {TEXT_PRIMARY};
             }}
             QTabBar::tab:!selected:hover {{
-                background: #EAEAEA;
+                background: #E5E9F0;
                 color: {TEXT_PRIMARY};
             }}
 
@@ -409,7 +405,7 @@ class Ui_MainWindow(object):
             #spectatorToCarButtonSpecial, #followEasyButtonSpecial, #followProButtonSpecial,
             #setSpectatorPoseButtonSpecial, #renderButtonSpecial, #hud2dButtonSpecial, #showSpeedButtonSpecial
             {{
-                background-color: {WIN_BLUE};
+                background-color: {NORD_PRIMARY};
                 color: white; border: none; font-weight: bold;
             }}
             #startCarlaButton:hover, #connectCarlaButton:hover, #spawnCarButton:hover, #setCarPoseButton:hover,
@@ -417,26 +413,26 @@ class Ui_MainWindow(object):
             #spectatorToCarButtonSpecial:hover, #followEasyButtonSpecial:hover, #followProButtonSpecial:hover,
             #setSpectatorPoseButtonSpecial:hover, #renderButtonSpecial:hover, #hud2dButtonSpecial:hover, #showSpeedButtonSpecial:hover
              {{
-                background-color: {WIN_BLUE_HOVER};
+                background-color: {NORD_PRIMARY_HOVER};
             }}
 
             #closeCarlaButton, #clearAllActorButton, #clearActorButton,
             #stopFollowButtonSpecial, #noRenderButtonSpecial, #hideSpeedButtonSpecial
             {{
-                background-color: {WIN_RED};
+                background-color: {NORD_DANGER};
                 color: white; border: none; font-weight: bold;
             }}
             #closeCarlaButton:hover, #clearAllActorButton:hover, #clearActorButton:hover,
             #stopFollowButtonSpecial:hover, #noRenderButtonSpecial:hover, #hideSpeedButtonSpecial:hover
             {{
-                background-color: {WIN_RED_HOVER};
+                background-color: {NORD_DANGER_HOVER};
             }}
 
             #refreshCarsButton {{
                 background-color: transparent; border: none;
             }}
             #refreshCarsButton:hover {{
-                color: {WIN_BLUE};
+                color: {NORD_PRIMARY};
             }}
 
             QFrame[frameShape="4"] {{ border: none; background: {BORDER}; max-height: 1px; }}
@@ -473,8 +469,8 @@ class Ui_MainWindow(object):
         self.pushButton_SpectatorFollower_pro.setText(_translate("MainWindow", "spectator\n跟随车辆(pro)"))
         self.pushButton_setSpectatorPose.setText(_translate("MainWindow", "设置观测者位置"))
         self.label_current_car_info.setText(_translate("MainWindow", "当前未连接车辆"))
-        self.label_current_car_info.setStyleSheet(
-            "font-weight: normal; color: #555; padding: 5px; border: 1px solid #ddd; border-radius: 4px; background-color: #f0f0f0;")
+        # 移除此处的内联样式，让其由主样式表控制
+        # self.label_current_car_info.setStyleSheet(...)
 
         self.comboBox_quality.addItems(["Low", "Epic"])
         self.rendering_mode.addItems(["正常", "离屏渲染"])
