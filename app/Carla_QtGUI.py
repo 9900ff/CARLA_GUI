@@ -13,34 +13,30 @@ from PyQt5.QtCore import QThread
 import carla
 from QT_CARLA.CARLA_tools import Ui_MainWindow
 
-def load_config():
+def find_config_path():
     """
-    读取配置文件并返回配置对象。
-    会先在当前目录搜索 config.ini，如果找不到，则去上级目录搜索。
+    搜索并返回 config.ini 的有效路径。
     """
-    # 1. 定义要搜索的目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
-
-    # 2. 创建一个按优先级排序的搜索路径列表
     search_paths = [
         os.path.join(current_dir, 'config.ini'),
         os.path.join(parent_dir, 'config.ini')
     ]
-
-    config = configparser.ConfigParser()
-
-    # 3. 遍历列表，查找并读取第一个找到的配置文件
     for config_path in search_paths:
-        # 使用 os.path.exists() 来检查文件是否存在
         if os.path.exists(config_path):
-            print(f"成功找到并加载配置文件: {config_path}")
-            config.read(config_path, encoding='utf-8')
-            # 找到后立即返回，停止继续搜索
-            return config
-
-    # 4. 如果循环结束后仍然没有找到文件，则抛出异常
+            return config_path
     raise FileNotFoundError(f"在指定的目录中都找不到 'config.ini' 文件。搜索路径: {search_paths}")
+
+def load_config():
+    """
+    读取配置文件并返回配置对象。
+    """
+    config_path = find_config_path()
+    print(f"成功找到并加载配置文件: {config_path}")
+    config = configparser.ConfigParser()
+    config.read(config_path, encoding='utf-8')
+    return config
 
 
 class MyMainWindow(QMainWindow):
@@ -62,7 +58,8 @@ class MyMainWindow(QMainWindow):
         self.speed_thread = None
         # 初始化qt界面部分内容
         self.ui.textBrowser_chooseCARLA.setText(self.carla_path)
-
+        # 加载备忘录内容
+        self.load_memo()
         # 设置一个 QTimer，每2秒检查一次连接状态
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_world_data)
@@ -96,6 +93,8 @@ class MyMainWindow(QMainWindow):
 
         self.ui.pushButton_showSpeed.clicked.connect(self.show_vehicle_speed) # 启用速度显示
         self.ui.pushButton_hideSpeed.clicked.connect(self.close_vehicle_speed)   # 禁用速度显示
+
+        self.ui.pushButton_saveMemo.clicked.connect(self.save_memo) # 保存备忘录
 
     def choose_carla_path(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "选择 CARLA 启动程序", "", "可执行文件 (*.exe);;所有文件 (*)")
@@ -630,6 +629,40 @@ class MyMainWindow(QMainWindow):
         else:
             print("ℹ️ 当前没有正在运行的速度显示线程。")
 
+    def load_memo(self):
+        """从 config.ini 加载备忘录内容。"""
+        try:
+            config = load_config()
+            if config.has_section('Memo') and config.has_option('Memo', 'notes'):
+                notes = config.get('Memo', 'notes')
+                self.ui.textEdit_memo.setPlainText(notes)
+                print("✅ 备忘录内容已加载。")
+        except Exception as e:
+            print(f"❌ 加载备忘录失败: {e}")
+
+    def save_memo(self):
+        """将备忘录内容保存到 config.ini。"""
+        try:
+            config_path = find_config_path()
+            config = configparser.ConfigParser()
+            config.read(config_path, encoding='utf-8')
+
+            if not config.has_section('Memo'):
+                config.add_section('Memo')
+
+            notes = self.ui.textEdit_memo.toPlainText()
+            config.set('Memo', 'notes', notes)
+
+            with open(config_path, 'w', encoding='utf-8') as configfile:
+                config.write(configfile)
+
+            print("✅ 备忘录已成功保存到 config.ini。")
+            # 可以在状态栏显示提示
+            self.statusBar().showMessage("备忘录已保存", 3000)
+
+        except Exception as e:
+            print(f"❌ 保存备忘录失败: {e}")
+            self.statusBar().showMessage(f"保存失败: {e}", 5000)
 
 class SpectatorFollowerThread_pro(QThread): # 带运镜的跟随
     def __init__(self, world, vehicle, x_offset=110, y_offset=60, z_offset=40, tolerance=2):

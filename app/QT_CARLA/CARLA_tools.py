@@ -10,7 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLineEdit, QLabel, QComboBox, QTextBrowser, QGroupBox,
-    QFrame, QSizePolicy, QTabWidget
+    QFrame, QSizePolicy, QTabWidget, QTextEdit
 )
 
 
@@ -177,7 +177,7 @@ class Ui_MainWindow(object):
         right_v_layout = QVBoxLayout(right_status_widget)
         right_v_layout.setContentsMargins(0, 0, 0, 0)
         self.label_current_car_info = QLabel()
-        self.label_current_car_info.setObjectName("statusLabel")  # Assign objectName for styling
+        self.label_current_car_info.setObjectName("statusLabel")
         self.textBrowser_carState = QTextBrowser()
         right_v_layout.addWidget(self.label_current_car_info)
         right_v_layout.addWidget(QLabel("场景中全部车辆:"))
@@ -231,7 +231,7 @@ class Ui_MainWindow(object):
         layout.addWidget(self.pushButton_hideSpeed, 6, 1)
         world_tab.setLayout(layout)
 
-        # --- Tab 2: 车辆控制 (合并生成和移动) ---
+        # --- Tab 2: 车辆控制 ---
         vehicle_tab = QWidget()
         vehicle_layout = QGridLayout(vehicle_tab)
 
@@ -239,7 +239,6 @@ class Ui_MainWindow(object):
         self.label_current_car_info_vehicle.setObjectName("statusLabel")
         vehicle_layout.addWidget(self.label_current_car_info_vehicle, 0, 0, 1, 4)
 
-        # Spawning controls
         spawn_title = QLabel("生成车辆")
         spawn_title.setStyleSheet("font-weight: bold;")
         vehicle_layout.addWidget(spawn_title, 1, 0, 1, 4)
@@ -266,13 +265,11 @@ class Ui_MainWindow(object):
         vehicle_layout.addWidget(self.pushButton_spawnCar, 5, 0, 1, 2)
         vehicle_layout.addWidget(self.pushButton_spawnCarPygame, 5, 2, 1, 2)
 
-        # Separator
-        line = QFrame();
-        line.setFrameShape(QFrame.HLine);
-        line.setFrameShadow(QFrame.Sunken)
-        vehicle_layout.addWidget(line, 6, 0, 1, 4)
+        line2 = QFrame();
+        line2.setFrameShape(QFrame.HLine);
+        line2.setFrameShadow(QFrame.Sunken)
+        vehicle_layout.addWidget(line2, 6, 0, 1, 4)
 
-        # Moving controls
         move_title = QLabel("移动当前车辆")
         move_title.setStyleSheet("font-weight: bold;")
         vehicle_layout.addWidget(move_title, 7, 0, 1, 4)
@@ -293,7 +290,7 @@ class Ui_MainWindow(object):
         vehicle_layout.addWidget(self.lineEdit_moveYaw, 9, 3)
         vehicle_layout.addWidget(self.pushButton_setCarPose, 10, 0, 1, 4)
 
-        vehicle_layout.setRowStretch(11, 1)  # Add stretch to keep groups compact at the top
+        vehicle_layout.setRowStretch(11, 1)
 
         # --- Tab 3: 观察者控制 ---
         spectator_tab = QWidget()
@@ -321,10 +318,10 @@ class Ui_MainWindow(object):
         spectator_layout.addWidget(self.pushButton_SpectatorFollower_easy, 2, 0, 1, 2)
         spectator_layout.addWidget(self.pushButton_SpectatorFollower_pro, 2, 2, 1, 2)
 
-        line2 = QFrame();
-        line2.setFrameShape(QFrame.HLine);
-        line2.setFrameShadow(QFrame.Sunken)
-        spectator_layout.addWidget(line2, 3, 0, 1, 4)
+        line3 = QFrame();
+        line3.setFrameShape(QFrame.HLine);
+        line3.setFrameShadow(QFrame.Sunken)
+        spectator_layout.addWidget(line3, 3, 0, 1, 4)
 
         self.pushButton_setSpectatorPose = QPushButton()
         self.pushButton_setSpectatorPose.setObjectName("setSpectatorPoseButtonSpecial")
@@ -344,11 +341,22 @@ class Ui_MainWindow(object):
         spectator_layout.addWidget(self.pushButton_setSpectatorPose, 7, 0, 1, 4)
 
         spectator_main_layout.addWidget(spectator_controls_widget)
-        spectator_main_layout.addStretch(1)  # Add stretch to prevent label expansion
+        spectator_main_layout.addStretch(1)
+
+        # --- Tab 4: 备忘录 ---
+        memo_tab = QWidget()
+        memo_layout = QVBoxLayout(memo_tab)
+        self.textEdit_memo = QTextEdit()
+        self.textEdit_memo.setPlaceholderText("在此处输入您的笔记或备忘录...")
+        self.pushButton_saveMemo = QPushButton()
+        self.pushButton_saveMemo.setObjectName("saveMemoButton")
+        memo_layout.addWidget(self.textEdit_memo)
+        memo_layout.addWidget(self.pushButton_saveMemo)
 
         tab_widget.addTab(world_tab, "世界")
         tab_widget.addTab(vehicle_tab, "车辆")
         tab_widget.addTab(spectator_tab, "观察者")
+        tab_widget.addTab(memo_tab, "备忘录")
 
         main_layout.addWidget(tab_widget)
         parent_layout.addWidget(main_group)
@@ -358,8 +366,8 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1000, 26))
-        self.menuCARLA = QtWidgets.QMenu(self.menubar)
-        self.menubar.addAction(self.menuCARLA.menuAction())
+        # self.menuCARLA = QtWidgets.QMenu(self.menubar)
+        # self.menubar.addAction(self.menuCARLA.menuAction())
         MainWindow.setMenuBar(self.menubar)
 
     def apply_stylesheet(self, app_window):
@@ -395,7 +403,7 @@ class Ui_MainWindow(object):
                 subcontrol-origin: margin; subcontrol-position: top left;
                 padding: 2px 8px; color: {TEXT_SECONDARY}; font-weight: 600;
             }}
-            QLineEdit, QComboBox, QTextBrowser {{
+            QLineEdit, QComboBox, QTextBrowser, QTextEdit {{
                 background: {BG_PANEL};
                 border: 1px solid {BORDER};
                 border-radius: 6px; padding: 6px 8px;
@@ -404,7 +412,7 @@ class Ui_MainWindow(object):
             QTextBrowser {{
                 max-height: 200px;
             }}
-            QLineEdit:focus, QComboBox:focus {{ border: 1px solid {NORD_PRIMARY}; }}
+            QLineEdit:focus, QComboBox:focus, QTextEdit:focus {{ border: 1px solid {NORD_PRIMARY}; }}
             QComboBox::drop-down {{
                 border-left: 1px solid {BORDER};
             }}
@@ -448,7 +456,7 @@ class Ui_MainWindow(object):
             }}
 
             #startCarlaButton, #connectCarlaButton, #spawnCarButton, #setCarPoseButton,
-            #connectVehicleButton,
+            #connectVehicleButton, #saveMemoButton,
             #spectatorToCarButtonSpecial, #followEasyButtonSpecial, #followProButtonSpecial,
             #setSpectatorPoseButtonSpecial, #renderButtonSpecial, #hud2dButtonSpecial, #showSpeedButtonSpecial
             {{
@@ -456,7 +464,7 @@ class Ui_MainWindow(object):
                 color: white; border: none; font-weight: bold;
             }}
             #startCarlaButton:hover, #connectCarlaButton:hover, #spawnCarButton:hover, #setCarPoseButton:hover,
-            #connectVehicleButton:hover,
+            #connectVehicleButton:hover, #saveMemoButton:hover,
             #spectatorToCarButtonSpecial:hover, #followEasyButtonSpecial:hover, #followProButtonSpecial:hover,
             #setSpectatorPoseButtonSpecial:hover, #renderButtonSpecial:hover, #hud2dButtonSpecial:hover, #showSpeedButtonSpecial:hover
              {{
@@ -524,6 +532,7 @@ class Ui_MainWindow(object):
         self.pushButton_StopSpectatorFollower.setText(_translate("MainWindow", "停止spectator\n跟随车辆"))
         self.pushButton_SpectatorFollower_pro.setText(_translate("MainWindow", "spectator\n跟随车辆(pro)"))
         self.pushButton_setSpectatorPose.setText(_translate("MainWindow", "设置观测者位置"))
+        self.pushButton_saveMemo.setText(_translate("MainWindow", "保存备忘录"))
 
         # Set initial text for all status labels
         self.label_current_car_info.setText(_translate("MainWindow", "当前未连接车辆"))
@@ -562,7 +571,7 @@ class Ui_MainWindow(object):
         self.lineEdit_spectatorYaw.setText("0")
 
         self.textBrowser_carState.setHtml("<p>未连接</p>")
-        self.menuCARLA.setTitle(_translate("MainWindow", "CARLA启动"))
+        # self.menuCARLA.setTitle(_translate("MainWindow", "CARLA启动"))
 
 
 if __name__ == "__main__":
@@ -574,4 +583,3 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
-
