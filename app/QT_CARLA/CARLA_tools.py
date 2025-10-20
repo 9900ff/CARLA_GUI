@@ -17,8 +17,8 @@ from PyQt5.QtWidgets import (
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1000, 850)  # 优化后可以减少一些高度
-        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 美化版)")
+        MainWindow.resize(1000, 800)
+        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 专业版)")
 
         # 设置全局字体和样式
         font = QtGui.QFont("Segoe UI", 9)
@@ -39,8 +39,6 @@ class Ui_MainWindow(object):
         self.create_server_control_group(left_layout)
         # CARLA 连接控制
         self.create_connection_group(left_layout)
-        # 世界控制
-        self.create_world_control_group(left_layout)
 
         left_layout.addStretch(1)
 
@@ -51,13 +49,14 @@ class Ui_MainWindow(object):
 
         # Actor 列表与操作
         self.create_actor_list_group(right_layout)
-        # 车辆与观察者控制 (使用 TabWidget)
-        self.create_actor_control_tabs(right_layout)
+        # 核心控制区 (使用 TabWidget)
+        self.create_main_control_tabs(right_layout)
 
         right_layout.addStretch(1)
 
-        main_layout.addWidget(left_panel, 1)
-        main_layout.addWidget(right_panel, 2)
+        # 调整主面板伸缩比例
+        main_layout.addWidget(left_panel, 2)
+        main_layout.addWidget(right_panel, 3)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.setup_menubar_statusbar(MainWindow)
@@ -71,14 +70,13 @@ class Ui_MainWindow(object):
     def apply_effects(self, MainWindow):
         """
         应用紧凑布局等微调。
-        在 Windows 10 风格中，阴影效果被禁用。
         """
 
         def _compact_layout(widget: QWidget):
             layouts = widget.findChildren(QtWidgets.QLayout)
             for lay in layouts:
                 lay.setSpacing(8)
-                lay.setContentsMargins(10, 10, 10, 10)
+                lay.setContentsMargins(12, 12, 12, 12)
 
         _compact_layout(MainWindow.centralWidget())
 
@@ -126,52 +124,7 @@ class Ui_MainWindow(object):
         layout.addWidget(self.pushButton_connectCARLA, 2, 0, 1, 2)
         layout.addWidget(QLabel("连接状态:"), 3, 0, 1, 2)
         layout.addWidget(self.textBrowser_connectState, 4, 0, 1, 2)
-
-        parent_layout.addWidget(group)
-
-    def create_world_control_group(self, parent_layout):
-        group = QGroupBox("世界控制")
-        layout = QGridLayout(group)
-
-        self.comboBox_map = QComboBox()
-        self.pushButton_chooseMap = QPushButton()
-
-        self.comboBox_weather = QComboBox()
-        self.pushButton_chooseWeather = QPushButton()
-
-        self.pushButton_setAsyn = QPushButton()
-        self.pushButton_clearAllActor = QPushButton()
-        self.pushButton_clearAllActor.setObjectName("clearAllActorButton")
-
-        self.pushButton_render = QPushButton()
-        self.pushButton_render.setObjectName("renderButtonSpecial")
-        self.pushButton_norender = QPushButton()
-        self.pushButton_norender.setObjectName("noRenderButtonSpecial")
-
-        self.pushButton_HUD2d = QPushButton()
-        self.pushButton_HUD2d.setObjectName("hud2dButtonSpecial")
-        self.pushButton_showSpeed = QPushButton()
-        self.pushButton_showSpeed.setObjectName("showSpeedButtonSpecial")
-        self.pushButton_hideSpeed = QPushButton()
-        self.pushButton_hideSpeed.setObjectName("hideSpeedButtonSpecial")
-
-        layout.addWidget(self.comboBox_map, 0, 0)
-        layout.addWidget(self.pushButton_chooseMap, 0, 1)
-        layout.addWidget(self.comboBox_weather, 1, 0)
-        layout.addWidget(self.pushButton_chooseWeather, 1, 1)
-        layout.addWidget(self.pushButton_setAsyn, 2, 0)
-        layout.addWidget(self.pushButton_clearAllActor, 2, 1)
-        layout.addWidget(self.pushButton_render, 3, 0)
-        layout.addWidget(self.pushButton_norender, 3, 1)
-
-        line = QFrame();
-        line.setFrameShape(QFrame.HLine);
-        line.setFrameShadow(QFrame.Sunken)
-        layout.addWidget(line, 4, 0, 1, 2)
-
-        layout.addWidget(self.pushButton_HUD2d, 5, 0, 1, 2)
-        layout.addWidget(self.pushButton_showSpeed, 6, 0)
-        layout.addWidget(self.pushButton_hideSpeed, 6, 1)
+        layout.setRowStretch(4, 1)  # 让状态框填充剩余空间
 
         parent_layout.addWidget(group)
 
@@ -179,7 +132,6 @@ class Ui_MainWindow(object):
         actor_list_group = QGroupBox("车辆列表与操作")
         list_layout = QHBoxLayout(actor_list_group)
 
-        # --- 左侧栏: 使用 QGridLayout 进行精确对齐 ---
         left_controls_widget = QWidget()
         left_grid_layout = QGridLayout(left_controls_widget)
         left_grid_layout.setContentsMargins(0, 0, 10, 0)
@@ -205,7 +157,6 @@ class Ui_MainWindow(object):
         left_grid_layout.setColumnStretch(0, 1)
         left_grid_layout.setRowStretch(4, 1)
 
-        # --- 右侧栏: 状态显示 ---
         right_status_widget = QWidget();
         right_v_layout = QVBoxLayout(right_status_widget)
         right_v_layout.setContentsMargins(0, 0, 0, 0)
@@ -219,13 +170,51 @@ class Ui_MainWindow(object):
         list_layout.addWidget(right_status_widget, 3)
         parent_layout.addWidget(actor_list_group)
 
-    def create_actor_control_tabs(self, parent_layout):
-        main_group = QGroupBox("车辆与观察者控制")
+    def create_main_control_tabs(self, parent_layout):
+        main_group = QGroupBox("核心控制")
         main_layout = QVBoxLayout(main_group)
 
         tab_widget = QTabWidget()
 
-        # --- Tab 1: 生成车辆 ---
+        # --- Tab 1: 世界控制 (Moved from left panel) ---
+        world_tab = QWidget()
+        layout = QGridLayout(world_tab)
+        self.comboBox_map = QComboBox()
+        self.pushButton_chooseMap = QPushButton()
+        self.comboBox_weather = QComboBox()
+        self.pushButton_chooseWeather = QPushButton()
+        self.pushButton_setAsyn = QPushButton()
+        self.pushButton_clearAllActor = QPushButton()
+        self.pushButton_clearAllActor.setObjectName("clearAllActorButton")
+        self.pushButton_render = QPushButton()
+        self.pushButton_render.setObjectName("renderButtonSpecial")
+        self.pushButton_norender = QPushButton()
+        self.pushButton_norender.setObjectName("noRenderButtonSpecial")
+        self.pushButton_HUD2d = QPushButton()
+        self.pushButton_HUD2d.setObjectName("hud2dButtonSpecial")
+        self.pushButton_showSpeed = QPushButton()
+        self.pushButton_showSpeed.setObjectName("showSpeedButtonSpecial")
+        self.pushButton_hideSpeed = QPushButton()
+        self.pushButton_hideSpeed.setObjectName("hideSpeedButtonSpecial")
+
+        layout.addWidget(self.comboBox_map, 0, 0)
+        layout.addWidget(self.pushButton_chooseMap, 0, 1)
+        layout.addWidget(self.comboBox_weather, 1, 0)
+        layout.addWidget(self.pushButton_chooseWeather, 1, 1)
+        layout.addWidget(self.pushButton_setAsyn, 2, 0)
+        layout.addWidget(self.pushButton_clearAllActor, 2, 1)
+        layout.addWidget(self.pushButton_render, 3, 0)
+        layout.addWidget(self.pushButton_norender, 3, 1)
+        line = QFrame();
+        line.setFrameShape(QFrame.HLine);
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line, 4, 0, 1, 2)
+        layout.addWidget(self.pushButton_HUD2d, 5, 0, 1, 2)
+        layout.addWidget(self.pushButton_showSpeed, 6, 0)
+        layout.addWidget(self.pushButton_hideSpeed, 6, 1)
+        world_tab.setLayout(layout)
+
+        # --- Tab 2: 生成车辆 ---
         spawn_tab = QWidget()
         spawn_layout = QGridLayout(spawn_tab)
         self.lineEdit_spawnname = QLineEdit()
@@ -251,7 +240,7 @@ class Ui_MainWindow(object):
         spawn_layout.addWidget(self.pushButton_spawnCarPygame, 3, 2, 1, 2)
         spawn_tab.setLayout(spawn_layout)
 
-        # --- Tab 2: 移动车辆 ---
+        # --- Tab 3: 移动车辆 ---
         move_tab = QWidget()
         move_layout = QGridLayout(move_tab)
         self.pushButton_setCarPose = QPushButton()
@@ -271,7 +260,7 @@ class Ui_MainWindow(object):
         move_layout.addWidget(self.pushButton_setCarPose, 2, 0, 1, 4)
         move_tab.setLayout(move_layout)
 
-        # --- Tab 3: 观察者控制 ---
+        # --- Tab 4: 观察者控制 ---
         spectator_tab = QWidget()
         spectator_layout = QGridLayout(spectator_tab)
         self.pushButton_setSpectatorPose_tocar = QPushButton()
@@ -312,15 +301,13 @@ class Ui_MainWindow(object):
         spectator_layout.addWidget(self.pushButton_setSpectatorPose, 7, 0, 1, 4)
         spectator_tab.setLayout(spectator_layout)
 
+        tab_widget.addTab(world_tab, "世界")
         tab_widget.addTab(spawn_tab, "生成")
         tab_widget.addTab(move_tab, "移动")
         tab_widget.addTab(spectator_tab, "观察者")
 
         main_layout.addWidget(tab_widget)
         parent_layout.addWidget(main_group)
-
-    # --- The old create_actor_control_group and create_vehicle_spectator_group are now obsolete ---
-    # They are replaced by create_actor_list_group and create_actor_control_tabs
 
     def setup_menubar_statusbar(self, MainWindow):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -398,7 +385,6 @@ class Ui_MainWindow(object):
             /* --- TabWidget Styles --- */
             QTabWidget::pane {{
                 border: 1px solid {BORDER};
-                border-top: none;
                 background: {BG_PANEL};
             }}
             QTabBar::tab {{
@@ -406,14 +392,16 @@ class Ui_MainWindow(object):
                 border: 1px solid {BORDER};
                 border-bottom: none;
                 padding: 8px 16px;
-                font-weight: 500;
+                font-weight: 600;
+                color: {TEXT_SECONDARY};
             }}
             QTabBar::tab:selected {{
                 background: {BG_PANEL};
-                border-bottom: 1px solid {BG_PANEL};
+                color: {TEXT_PRIMARY};
             }}
             QTabBar::tab:!selected:hover {{
-                background: #E0E0E0;
+                background: #EAEAEA;
+                color: {TEXT_PRIMARY};
             }}
 
             #startCarlaButton, #connectCarlaButton, #spawnCarButton, #setCarPoseButton,
