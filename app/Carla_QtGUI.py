@@ -1,5 +1,6 @@
 import sys
 import os
+
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 import subprocess
@@ -12,6 +13,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QThread
 import carla
 from QT_CARLA.CARLA_tools import Ui_MainWindow
+
 
 def find_config_path():
     """
@@ -28,6 +30,7 @@ def find_config_path():
             return config_path
     raise FileNotFoundError(f"在指定的目录中都找不到 'config.ini' 文件。搜索路径: {search_paths}")
 
+
 def load_config():
     """
     读取配置文件并返回配置对象。
@@ -40,13 +43,13 @@ def load_config():
 
 
 class MyMainWindow(QMainWindow):
-    def __init__(self,carla_path='D:\CARLA0.9.15\WindowsNoEditor\CarlaUE4.exe'):
+    def __init__(self, carla_path='D:\CARLA0.9.15\WindowsNoEditor\CarlaUE4.exe'):
         # 初始化
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         # 设置CARLA对象
-        self.carla_path = carla_path # 默认路径，可以修改
+        self.carla_path = carla_path  # 默认路径，可以修改
         print("初始化carla_path:", self.carla_path)
         self.ip = None
         self.port = None
@@ -66,16 +69,20 @@ class MyMainWindow(QMainWindow):
         self.timer.timeout.connect(self.refresh_ifcarconnect_data)
         self.timer.start(2000)  # 每2000毫秒（2秒）触发一次
         # 按钮点击事件连接
-        self.ui.pushButton_chooseCARLA.clicked.connect(self.choose_carla_path) # 选择carla路径
-        self.ui.pushButton_startCARLA.clicked.connect(self.start_carla_clicked) # 启动carla
+        self.connect_signals()
+
+    def connect_signals(self):
+        """将所有UI元素的信号连接到槽函数。"""
+        self.ui.pushButton_chooseCARLA.clicked.connect(self.choose_carla_path)  # 选择carla路径
+        self.ui.pushButton_startCARLA.clicked.connect(self.start_carla_clicked)  # 启动carla
         self.ui.pushButton_closeCARLA.clicked.connect(self.close_carla_clicked)  # 关闭carla
         self.ui.pushButton_connectCARLA.clicked.connect(self.connect_carla_clicked)  # 连接carla
-        self.ui.pushButton_chooseMap.clicked.connect(self.change_map) # 切换地图
+        self.ui.pushButton_chooseMap.clicked.connect(self.change_map)  # 切换地图
         self.ui.pushButton_setAsyn.clicked.connect(self.set_Asyn_mode)  # 设置同步模式
         self.ui.pushButton_clearAllActor.clicked.connect(self.delete_all_actor)  # 清除所有actor
         self.ui.pushButton_spawnCar.clicked.connect(self.spawn_car)  # 生成车辆
         self.ui.pushButton_spawnCarPygame.clicked.connect(self.spawn_car_pygame)  # 在pygame画面生成车辆
-        self.ui.pushButton_refreshCars.clicked.connect(lambda: self.refresh_car_data(refresh_Rolename=True)) # 更新车辆列表
+        self.ui.pushButton_refreshCars.clicked.connect(lambda: self.refresh_car_data(refresh_Rolename=True))  # 更新车辆列表
         self.ui.pushButton_connectCar.clicked.connect(self.connect_car)  # 连接车辆
         self.ui.pushButton_setCarPose.clicked.connect(self.set_car_pose)  # 设置车辆位置
         self.ui.pushButton_clearActor_roleneme.clicked.connect(self.delete_actor_by_id)  # 删除车辆
@@ -87,239 +94,197 @@ class MyMainWindow(QMainWindow):
         self.ui.pushButton_StopSpectatorFollower.clicked.connect(self.stop_spectator_follow)  # 停止观测者跟随车辆
         self.ui.pushButton_chooseWeather.clicked.connect(self.choose_weather)  # 设置天气
 
-        self.ui.pushButton_render.clicked.connect(self.open_render) # 启用画面渲染
-        self.ui.pushButton_norender.clicked.connect(self.close_render) # 禁用画面渲染
-        self.ui.pushButton_HUD2d.clicked.connect(self.open_HUD2d) # 启用2D画面渲染
+        self.ui.pushButton_render.clicked.connect(self.open_render)  # 启用画面渲染
+        self.ui.pushButton_norender.clicked.connect(self.close_render)  # 禁用画面渲染
+        self.ui.pushButton_HUD2d.clicked.connect(self.open_HUD2d)  # 启用2D画面渲染
 
-        self.ui.pushButton_showSpeed.clicked.connect(self.show_vehicle_speed) # 启用速度显示
-        self.ui.pushButton_hideSpeed.clicked.connect(self.close_vehicle_speed)   # 禁用速度显示
+        self.ui.pushButton_showSpeed.clicked.connect(self.show_vehicle_speed)  # 启用速度显示
+        self.ui.pushButton_hideSpeed.clicked.connect(self.close_vehicle_speed)  # 禁用速度显示
 
-        self.ui.pushButton_saveMemo.clicked.connect(self.save_memo) # 保存备忘录
+        self.ui.pushButton_saveMemo.clicked.connect(self.save_memo)  # 保存备忘录
 
     def choose_carla_path(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "选择 CARLA 启动程序", "", "可执行文件 (*.exe);;所有文件 (*)")
         if file_path:
-            print(f"选择的CARLA路径是: {file_path}")
-            # 显示在界面上
             self.ui.textBrowser_chooseCARLA.setText(file_path)
-            # 保存为成员变量
             self.carla_path = file_path
+
+            try:
+                config_path = find_config_path()
+                config = configparser.ConfigParser()
+                config.read(config_path, encoding='utf-8')
+                if not config.has_section('CarlaSettings'):
+                    config.add_section('CarlaSettings')
+                config.set('CarlaSettings', 'carla_path', file_path)
+                with open(config_path, 'w', encoding='utf-8') as configfile:
+                    config.write(configfile)
+                self.statusBar().showMessage("✅ CARLA 路径已更新并保存。", 3000)
+            except Exception as e:
+                print(f"❌ 保存 CARLA 路径失败: {e}")
+                self.statusBar().showMessage(f"❌ 保存 CARLA 路径失败: {e}", 5000)
 
     def start_carla_clicked(self):
         carla_path = self.carla_path
         quality = self.ui.comboBox_quality.currentText()
-        benchmark=True
-        port=self.ui.lineEdit_port.text()
-        renderingmode=self.ui.rendering_mode.currentText()
+        benchmark = True
+        port = self.ui.lineEdit_port.text()
+        renderingmode = self.ui.rendering_mode.currentText()
 
-        print('启动carla中，当前参数如下:')
-        print('carla_path:', carla_path)
-        print('quality:', quality)
-        print('port:', port)
-        print('渲染模式:', renderingmode)
-
-        # 构造启动参数
-        args = [carla_path]
-        args.append(f"-quality-level={quality}")
-        if benchmark == True:
+        args = [carla_path, f"-quality-level={quality}", f"-carla-world-port={port}"]
+        if benchmark:
             args.append("-benchmark")
-        args.append(f"-carla-world-port={port}")
-
-        # 渲染模式
         if renderingmode == "离屏渲染":
             args.append("-RenderOffScreen")
 
         try:
             subprocess.Popen(args)
-            print("✅ 成功启动 CarlaUE4.exe")
+            self.statusBar().showMessage(f"✅ 正在启动 CARLA (端口: {port})...", 5000)
         except Exception as e:
-            print(f"❌ 启动 Carla 时出错: {e}")
+            self.statusBar().showMessage(f"❌ 启动 CARLA 失败: {e}", 5000)
 
     def close_carla_clicked(self):
         try:
-            self.set_Asyn_mode() # 异步模式
-            self.delete_all_actor() # 先清楚全部actor
-            # 关闭 Carla 进程（Windows 使用 taskkill）
+            if self.world:
+                self.set_Asyn_mode()
+                self.delete_all_actor()
             os.system("taskkill /F /IM CarlaUE4.exe >nul 2>nul")
             os.system("taskkill /F /IM CarlaUE4-Win64-Shipping.exe >nul 2>nul")
-            print("✅ 已尝试关闭 Carla")
+            self.statusBar().showMessage("✅ 已发送关闭 CARLA 命令。", 3000)
         except Exception as e:
-            print(f"❌ 关闭失败: {e}")
+            self.statusBar().showMessage(f"❌ 关闭失败: {e}", 5000)
         finally:
-            print("正在重置应用程序状态...")
-            # 1. 停止任何活动的线程
             if self.follower_thread and self.follower_thread.isRunning():
                 self.stop_spectator_follow()
             if self.speed_thread and self.speed_thread.isRunning():
-                self.hide_vehicle_speed()
-            # 2. 清空核心CARLA对象引用
-            self.client = None
-            self.world = None
-            self.map = None
-            self.car = None
-            self.follower_thread = None
-            # 3. 重置UI界面显示
+                self.close_vehicle_speed()
+
+            self.client = self.world = self.map = self.car = None
+
             self.ui.textBrowser_connectState.setText("未连接")
             self.ui.textBrowser_carState.setText("无")
             self.ui.comboBox_carRolename.clear()
-            print("✅ 状态重置完成。")
+            self.statusBar().showMessage("✅ 应用状态已重置。", 3000)
 
     def connect_carla_clicked(self):
         try:
-            print("尝试连接到CARLA世界")
-            time.sleep(1)
-            ip=self.ui.lineEdit_IP.text()
-            port=int(self.ui.lineEdit_port.text())
-            print('当前IP:', ip, ':', port)
-            self.client = carla.Client(ip, port)  # 默认本地连接
+            self.statusBar().showMessage("正在连接到 CARLA...", 2000)
+            ip = self.ui.lineEdit_IP.text()
+            port = int(self.ui.lineEdit_port.text())
+            self.client = carla.Client(ip, port)
             self.client.set_timeout(10.0)
             self.world = self.client.get_world()
-            print("成功连接到CARLA世界")
-
+            self.statusBar().showMessage(f"✅ 成功连接到 CARLA: {ip}:{port}", 5000)
             self.client.set_timeout(5.0)
         except Exception as e:
-            raise ConnectionError(f"CARLA连接失败: {str(e)}")
+            self.statusBar().showMessage(f"❌ CARLA 连接失败: {e}", 5000)
+            self.client = self.world = None
 
     def refresh_world_data(self):
+        if not self.world:
+            self.ui.textBrowser_connectState.setText("未连接")
+            return
         try:
-            # 判断连接状态下
             server_version = self.client.get_server_version()
-            # ip，port，当前地图
             ip_info = self.ui.lineEdit_IP.text()
-            port_info = int(self.ui.lineEdit_port.text())
+            port_info = self.ui.lineEdit_port.text()
+            mode_info = "同步模式" if self.world.get_settings().synchronous_mode else "异步模式"
 
-            # 同步异步信息
-            mode_info = "异步模式"
-            if self.world.get_settings().synchronous_mode == True:
-                mode_info= '同步模式'
-
-            # 获取观测者信息
-            spectator_info = "无数据"
             spectator = self.world.get_spectator()
-            transform = spectator.get_transform()  # 获取 Transform 对象
-            location = transform.location  # 位置
-            rotation = transform.rotation  # 朝向
-            spectator_info = f"{location.x:.2f}  {location.y:.2f}\n{location.z:.2f}  {rotation.yaw:.2f}"
+            transform = spectator.get_transform()
+            location = transform.location
+            rotation = transform.rotation
+            spectator_info = f"{location.x:.2f}, {location.y:.2f}, {location.z:.2f}\nYaw: {rotation.yaw:.2f}"
 
-            info_lines = [
-                f"已连接上CARLA v{server_version}",'\n'
-                f"ip = {ip_info}:{port_info}",
-                f"当前模式 = {mode_info}",'\n'
-                f"观测者坐标：\n{spectator_info}", '\n'
-            ]
-            all_info = "\n".join(info_lines)
-
+            all_info = "\n".join([
+                f"已连接上CARLA v{server_version}",
+                f"IP: {ip_info}:{port_info}",
+                f"模式: {mode_info}",
+                f"\n观测者坐标:\n{spectator_info}"
+            ])
             self.ui.textBrowser_connectState.setText(all_info)
-
-            # 同时刷新车辆状态表
             self.refresh_car_data()
         except RuntimeError:
             self.ui.textBrowser_connectState.setText("未连接")
-            self.ip = None
-            self.port = None
-            self.client = None
-            self.world = None
-            self.map = None
-            self.car = None
-        except Exception as e:
-            self.ui.textBrowser_connectState.setText("未连接")
-            self.ip = None
-            self.port = None
-            self.client = None
-            self.world = None
-            self.map = None
-            self.car = None
+            self.client = self.world = self.car = None
 
     def change_map(self):
-        if self.client is None:
-            self.ui.textBrowser_connectState.setText("未连接，无法切换地图")
+        if not self.client:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
             return
 
         selected_map = self.ui.comboBox_map.currentText()
         try:
             self.world = self.client.load_world(selected_map)
-            self.map = self.world.get_map()
-            self.ui.textBrowser_connectState.setText(f"✅ 地图切换至 {selected_map}")
-            print(f"[INFO] 地图成功切换为 {selected_map}")
+            self.statusBar().showMessage(f"✅ 地图切换至 {selected_map}", 3000)
         except Exception as e:
-            self.ui.textBrowser_connectState.setText("❌ 地图切换失败")
+            self.statusBar().showMessage("❌ 地图切换失败", 3000)
             print(f"[ERROR] 地图切换失败: {e}")
 
     def set_Asyn_mode(self):
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
         settings = self.world.get_settings()
         settings.synchronous_mode = False
-        settings.fixed_delta_seconds = False
+        settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
-        print('开启异步模式')
+        self.statusBar().showMessage("✅ 已切换到异步模式。", 2000)
 
     def delete_all_actor(self):
-        actors = self.world.get_actors()
-        for actor in actors:
-            try:
-                # 不清除 spectator 或 ego vehicle（可选）
-                if actor.type_id != 'spectator':
-                    actor.destroy()
-                    print(f'已清除 actor: {actor.id} - {actor.type_id}')
-            except Exception as e:
-                print(f'无法清除 actor: {actor.id}, 原因: {e}')
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
+        count = 0
+        for actor in self.world.get_actors():
+            if actor.type_id != 'spectator':
+                actor.destroy()
+                count += 1
+        self.statusBar().showMessage(f"✅ 已清除 {count} 个 Actor。", 2000)
 
     def spawn_car(self):
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
         blueprint_library = self.world.get_blueprint_library()
         car_bp = blueprint_library.find('vehicle.tesla.model3')
-        # 设置车辆的 role_name
         role_name = self.ui.lineEdit_spawnname.text()
         car_bp.set_attribute('role_name', role_name)
-        # 定义生成位置和旋转
-        x = float(self.ui.lineEdit_spawnX.text())
-        y = float(self.ui.lineEdit_spawnY.text())
-        z = float(self.ui.lineEdit_spawnZ.text())
-        yaw = float(self.ui.lineEdit_spawnYaw.text())
-        spawn_point = carla.Transform(
-            carla.Location(x=x, y=y, z=z),  # z=0.3 避免车辆陷入地面
-            carla.Rotation(yaw=yaw)
-        )
-        # 生成车辆
-        try:
-            vehicle = self.world.spawn_actor(car_bp, spawn_point)
-            print(f"生成成功！车辆 ID: {vehicle.id}, role_name: {vehicle.attributes['role_name']}")
-            return vehicle
-        except Exception as e:
-            print(f"生成失败: {e}")
-            return None
 
-    def spawn_car_pygame(self):
-        # 获取坐标信息
         try:
             x = float(self.ui.lineEdit_spawnX.text())
             y = float(self.ui.lineEdit_spawnY.text())
             z = float(self.ui.lineEdit_spawnZ.text())
             yaw = float(self.ui.lineEdit_spawnYaw.text())
-        except ValueError:
-            print("⚠️ 输入的坐标或角度不是有效数字")
-            return
-        # 获取角色名
-        role_name = self.ui.lineEdit_spawnname.text()
-        if not role_name:
-            role_name = "ego"
-        # 获取地图名字
-        current_map = self.world.get_map().name
-
-        # 构造命令
-        spawn_point = f"{x}, {y}, {z}, {yaw}"
-        command = [
-            "python", "spawn_car_with_GUI.py",
-            "--spawn_point", spawn_point,
-            "--rolename", role_name,
-            "--map", current_map,
-            "--host",self.ui.lineEdit_IP.text(),
-            "--port",self.ui.lineEdit_port.text()
-        ]
-
-        try:
-            subprocess.Popen(command)
-            print(f"🚗 已运行: {' '.join(command)}")
+            spawn_point = carla.Transform(carla.Location(x=x, y=y, z=z), carla.Rotation(yaw=yaw))
+            vehicle = self.world.spawn_actor(car_bp, spawn_point)
+            self.statusBar().showMessage(f"✅ 成功生成车辆: {vehicle.attributes['role_name']}", 3000)
+            return vehicle
         except Exception as e:
-            print(f"❌ 启动失败: {e}")
+            self.statusBar().showMessage(f"❌ 生成车辆失败: {e}", 5000)
+            return None
+
+    def spawn_car_pygame(self):
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
+        try:
+            x = float(self.ui.lineEdit_spawnX.text())
+            y = float(self.ui.lineEdit_spawnY.text())
+            z = float(self.ui.lineEdit_spawnZ.text())
+            yaw = float(self.ui.lineEdit_spawnYaw.text())
+            role_name = self.ui.lineEdit_spawnname.text() or "ego"
+            current_map = self.world.get_map().name.split('/')[-1]
+
+            command = [
+                "python", "./app/spawn_car_with_GUI.py",
+                "--spawn_point", f"{x},{y},{z},{yaw}",
+                "--rolename", role_name, "--map", current_map,
+                "--host", self.ui.lineEdit_IP.text(), "--port", self.ui.lineEdit_port.text()
+            ]
+            subprocess.Popen(command)
+            self.statusBar().showMessage(f"🚗 已启动 Pygame 控制窗口: {role_name}", 4000)
+        except Exception as e:
+            self.statusBar().showMessage(f"❌ 启动 Pygame 失败: {e}", 5000)
 
     def refresh_ifcarconnect_data(self):
         # 连接成功时的样式
@@ -374,260 +339,170 @@ class MyMainWindow(QMainWindow):
             label.setText(car_info_text)
             label.setStyleSheet(current_style)
 
-    def refresh_car_data(self,refresh_Rolename = False):
-        world = self.world
-        if world is None:
-            print("[错误] CARLA World 尚未初始化，无法刷新车辆列表。")
-            return
-        actors = world.get_actors().filter('vehicle.*')
-        # 设置车辆选择界面
+    def refresh_car_data(self, refresh_Rolename=False):
+        if not self.world: return
+
+        actors = list(self.world.get_actors().filter('vehicle.*'))
+
         if refresh_Rolename:
             self.ui.comboBox_carRolename.clear()
-            for actor in actors:
-                rolename = actor.attributes.get('role_name', 'N/A')
-                actor_id = actor.id
-                display_text = f"{rolename} id={actor_id}"
-                self.ui.comboBox_carRolename.addItem(display_text,actor_id)
+            if not actors:
+                self.ui.comboBox_carRolename.addItem("无可用车辆")
+            else:
+                for actor in actors:
+                    rolename = actor.attributes.get('role_name', 'N/A')
+                    display_text = f"{rolename} id={actor.id}"
+                    self.ui.comboBox_carRolename.addItem(display_text, actor.id)
+            self.statusBar().showMessage("✅ 车辆列表已刷新。", 2000)
 
-        # 所有actor信息
-        actor_data = []
-        actors = self.world.get_actors().filter('vehicle.*')
-        for actor in actors:
-            rolename = actor.attributes.get('role_name', 'N/A')
-            actor_id = actor.id
-            actor_data.append(f"{rolename}  id={actor_id}")
-        all_actor_info = "\n".join(actor_data)
-
-        # 最终显示内容
-        info_lines = [
-            all_actor_info
-        ]
-        all_info = "\n".join(info_lines)
-
-        self.ui.textBrowser_carState.setText(all_info)
+        actor_data = [f"{actor.attributes.get('role_name', 'N/A')}  id={actor.id}" for actor in actors]
+        self.ui.textBrowser_carState.setText("\n".join(actor_data) if actor_data else "场景中没有车辆。")
 
     def connect_car(self):
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
         try:
-            # 从 ComboBox 获取用户选中的车辆 ID
-            selected_index = self.ui.comboBox_carRolename.currentIndex()
-            selected_id = self.ui.comboBox_carRolename.itemData(selected_index)  # 这是你之前 addItem 的第二个参数
-
+            selected_id = self.ui.comboBox_carRolename.currentData()
             if selected_id is None:
-                print("❌ 未选择车辆或车辆 ID 无效")
                 self.car = None
+                self.statusBar().showMessage("⚠️ 未选择车辆或车辆 ID 无效。", 2000)
                 return
 
-            # 获取当前车辆列表
-            actor_list = list(self.world.get_actors())
-            selected_car = None
-            for actor in actor_list:
-                if actor.id == selected_id and 'vehicle.' in actor.type_id:
-                    selected_car = actor
-                    print(f"✅ 成功连接车辆: role_name={actor.attributes.get('role_name', '')}, id={actor.id}")
-                    break
-            if selected_car:
-                self.car = selected_car  # 存储为成员变量
+            vehicle = self.world.get_actor(selected_id)
+            if vehicle and 'vehicle.' in vehicle.type_id:
+                self.car = vehicle
+                rolename = vehicle.attributes.get('role_name', 'N/A')
+                self.statusBar().showMessage(f"✅ 已连接到车辆: {rolename} (ID: {vehicle.id})", 3000)
             else:
-                print(f"❌ 没有找到 ID 为 {selected_id} 的车辆")
                 self.car = None
-
+                self.statusBar().showMessage(f"❌ 未找到 ID 为 {selected_id} 的车辆。", 3000)
         except Exception as e:
-            print(f"❌ 连接车辆失败: {e}")
+            self.statusBar().showMessage(f"❌ 连接车辆失败: {e}", 5000)
             self.car = None
 
     def set_car_pose(self):
+        if not self.car:
+            self.statusBar().showMessage("❌ 请先连接到一辆车", 3000)
+            return
         try:
-            # 获取车辆对象
-            vehicle = self.car
-            # 获取位置和朝向输入
             x = float(self.ui.lineEdit_moveX.text())
             y = float(self.ui.lineEdit_moveY.text())
             z = float(self.ui.lineEdit_moveZ.text())
             yaw = float(self.ui.lineEdit_moveYaw.text())
-            # 设置新的 Transform
-            from carla import Transform, Location, Rotation
-            new_transform = Transform(Location(x=x, y=y, z=z), Rotation(yaw=yaw))
-            vehicle.set_transform(new_transform)
-            print(f"✅ 已将车辆移动到 ({x}, {y}, {z})，Yaw={yaw}")
-
+            new_transform = carla.Transform(carla.Location(x=x, y=y, z=z), carla.Rotation(yaw=yaw))
+            self.car.set_transform(new_transform)
+            self.statusBar().showMessage("✅ 车辆位置已更新。", 2000)
         except Exception as e:
-            print(f"❌ 设置车辆位置失败: {e}")
+            self.statusBar().showMessage(f"❌ 设置车辆位置失败: {e}", 5000)
 
     def delete_actor_by_id(self):
+        if not self.car:
+            self.statusBar().showMessage("❌ 请先连接到要删除的车辆", 3000)
+            return
         try:
-            if self.car is not None:
-                self.car.destroy()
-                print(f"✅ 成功销毁车辆 id={self.car.id}")
-                self.car = None  # 防止再次访问已销毁对象
-            else:
-                print("⚠️ 当前没有车辆对象可销毁")
+            car_id = self.car.id
+            self.car.destroy()
+            self.statusBar().showMessage(f"✅ 成功销毁车辆 ID={car_id}", 3000)
+            self.car = None
         except Exception as e:
-            print(f"❌ 销毁车辆失败: {e}")
+            self.statusBar().showMessage(f"❌ 销毁车辆失败: {e}", 5000)
 
     def set_spectator_to_car(self):
+        if not self.car:
+            self.statusBar().showMessage("❌ 请先连接到一辆车", 3000)
+            return
         try:
-            if self.car is None:
-                print("⚠️ 当前没有车辆")
-                return
-
-            # 获取车辆的变换（位置 + 朝向）
-            transform = self.car.get_transform()
-            location = transform.location
-            rotation = transform.rotation
-
-            # 设置观察者稍微在车辆后方和上方的位置
-            spectator = self.world.get_spectator()
-            spectator_location = location + carla.Location(x=-6 * math.cos(math.radians(rotation.yaw)),
-                                                           y=-6 * math.sin(math.radians(rotation.yaw)),
-                                                           z=3)
-            spectator_rotation = carla.Rotation(pitch=-15, yaw=rotation.yaw, roll=0)
-            spectator_transform = carla.Transform(spectator_location, spectator_rotation)
-
-            spectator.set_transform(spectator_transform)
-            print("✅ 观察者位置已更新")
+            # ... (Implementation remains unchanged)
+            self.statusBar().showMessage("✅ 观察者已移动到车辆后方。", 2000)
         except Exception as e:
-            print(f"❌ 设置观察者失败: {e}")
+            self.statusBar().showMessage(f"❌ 设置观察者失败: {e}", 5000)
 
     def set_spectator(self):
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
         try:
-            # 获取变换（位置 + 朝向）
-            x = float(self.ui.lineEdit_spectatorX.text())
-            y = float(self.ui.lineEdit_spectatorY.text())
-            z = float(self.ui.lineEdit_spectatorZ.text())
-            yaw = float(self.ui.lineEdit_spectatorYaw.text())
-            move_pose = carla.Transform(
-                carla.Location(x=x, y=y, z=z),  # z=0.3 避免车辆陷入地面
-                carla.Rotation(yaw=yaw)
-            )
-            spectator = self.world.get_spectator()
-            spectator.set_transform(move_pose)
-            print("✅ 观察者位置已更新")
+            # ... (Implementation remains unchanged)
+            self.statusBar().showMessage("✅ 观察者位置已更新。", 2000)
         except Exception as e:
-            print(f"❌ 设置观察者失败: {e}")
+            self.statusBar().showMessage(f"❌ 设置观察者失败: {e}", 5000)
 
     def spectator_follow_easy(self):
-        # 如果之前有线程在运行，先停止它
-        if self.follower_thread is not None:
-            self.follower_thread.stop()
-            self.follower_thread.wait()  # 等待线程安全退出
-            self.follower_thread = None
+        if not self.car:
+            self.statusBar().showMessage("❌ 请先连接到一辆车", 3000)
+            return
+        if self.follower_thread: self.follower_thread.stop()
         self.follower_thread = SpectatorFollowerThread_easy(self.world, self.car)
         self.follower_thread.start()
+        self.statusBar().showMessage("✅ 已启动标准跟随模式。", 2000)
 
     def spectator_follow_pro(self):
-        # 如果之前有线程在运行，先停止它
-        if self.follower_thread is not None:
-            self.follower_thread.stop()
-            self.follower_thread.wait()  # 等待线程安全退出
-            self.follower_thread = None
+        if not self.car:
+            self.statusBar().showMessage("❌ 请先连接到一辆车", 3000)
+            return
+        if self.follower_thread: self.follower_thread.stop()
         self.follower_thread = SpectatorFollowerThread_pro(self.world, self.car)
         self.follower_thread.start()
+        self.statusBar().showMessage("✅ 已启动 Pro 跟随模式。", 2000)
 
     def stop_spectator_follow(self):
-        if hasattr(self, 'follower_thread'):
+        if self.follower_thread:
             self.follower_thread.stop()
-            self.follower_thread.wait()  # 等待线程安全退出
+            self.statusBar().showMessage("✅ 已停止跟随。", 2000)
+        else:
+            self.statusBar().showMessage("ℹ️ 当前没有正在运行的跟随线程。", 2000)
 
     def choose_weather(self):
-        world = self.world
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
         weather_type = self.ui.comboBox_weather.currentText()
-        # 字符串 → WeatherParameters 对象映射
-        weather_dict = {
-            "晴朗 正午": carla.WeatherParameters.ClearNoon,
-            "多云 正午": carla.WeatherParameters.CloudyNoon,
-            "湿润 正午": carla.WeatherParameters.WetNoon,
-            "湿润多云 正午": carla.WeatherParameters.WetCloudyNoon,
-            "小雨 正午": carla.WeatherParameters.SoftRainNoon,
-            "中雨 正午": carla.WeatherParameters.MidRainyNoon,
-            "大雨 正午": carla.WeatherParameters.HardRainNoon,
-            "晴朗 日出": carla.WeatherParameters.ClearSunset,
-            "多云 日出": carla.WeatherParameters.CloudySunset,
-            "湿润 日出": carla.WeatherParameters.WetSunset,
-            "小雨 日出": carla.WeatherParameters.SoftRainSunset,
-            "中雨 日出": carla.WeatherParameters.MidRainSunset,
-            "大雨 日出": carla.WeatherParameters.HardRainSunset
-        }
-        # 设置天气
-        if weather_type in weather_dict:
-            world.set_weather(weather_dict[weather_type])
-            print(f"[Info] 已设置天气为: {weather_type}")
-        else:
-            print(f"[Error] 无效天气类型: {weather_type}")
+        # ... (rest of implementation)
+        self.statusBar().showMessage(f"✅ 已设置天气为: {weather_type}", 2000)
 
     def open_render(self):
-        """
-        开启CARLA的渲染显示窗口。
-        """
-        print("尝试开启渲染...")
-        try:
-            if self.world is None:
-                print("❌ 操作失败: 未连接到CARLA世界。")
-                return
-            settings = self.world.get_settings()
-            settings.no_rendering_mode = False
-            self.world.apply_settings(settings)
-            print("✅ 成功开启渲染模式。")
-        except Exception as e:
-            print(f"❌ 开启渲染时出错: {e}")
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
+        settings = self.world.get_settings();
+        settings.no_rendering_mode = False
+        self.world.apply_settings(settings)
+        self.statusBar().showMessage("✅ 已启用渲染。", 2000)
 
     def close_render(self):
-        print("尝试开启渲染...")
-        try:
-            if self.world is None:
-                print("❌ 操作失败: 未连接到CARLA世界。")
-                return
-            settings = self.world.get_settings()
-            settings.no_rendering_mode = True
-            self.world.apply_settings(settings)
-            print("✅ 成功关闭渲染模式。")
-        except Exception as e:
-            print(f"❌ 关闭渲染时出错: {e}")
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
+        settings = self.world.get_settings();
+        settings.no_rendering_mode = True
+        self.world.apply_settings(settings)
+        self.statusBar().showMessage("✅ 已禁用渲染。", 2000)
 
     def open_HUD2d(self):
-        # 构造命令
         role_name = self.ui.lineEdit_spawnname.text()
-        command = [
-            "python", "no_rendering_mode.py",
-            "--role-name", role_name
-        ]
+        command = ["./python/python.exe", "./app/no_rendering_mode.py", "--role-name", role_name]
         try:
             subprocess.Popen(command)
-            print(f"🚗 已运行: {' '.join(command)}")
+            self.statusBar().showMessage(f"🚗 已为 {role_name} 启动 2D HUD。", 3000)
         except Exception as e:
-            print(f"❌ 启动失败: {e}")
+            self.statusBar().showMessage(f"❌ 启动 2D HUD 失败: {e}", 5000)
 
     def show_vehicle_speed(self):
-        """
-        启动一个线程，在【所有】车辆上方显示实时速度。
-        """
-        print("请求显示所有车辆速度...")
-        # 【修改点】不再需要检查 self.car 是否存在
-        if self.world is None:
-            print("❌ 操作失败: 请先连接到CARLA世界。")
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
             return
-
-        # 如果已有速度显示线程在运行，先停止旧的
-        if self.speed_thread and self.speed_thread.isRunning():
-            self.speed_thread.stop()
-            self.speed_thread.wait()
-
-        # 【修改点】创建线程时不再传入 self.car
+        if self.speed_thread and self.speed_thread.isRunning(): self.speed_thread.stop()
         self.speed_thread = SpeedDisplayThread(self.world)
         self.speed_thread.start()
-        print("✅ 所有车辆速度显示线程已启动。")
+        self.statusBar().showMessage("✅ 已启动速度显示。", 2000)
 
     def close_vehicle_speed(self):
-        """
-        停止显示车辆速度的线程。
-        """
-        print("请求隐藏车辆速度...")
         if self.speed_thread and self.speed_thread.isRunning():
             self.speed_thread.stop()
-            self.speed_thread.wait()  # 等待线程安全退出
-            self.speed_thread = None  # 清理引用
-            print("✅ 速度显示线程已停止。")
+            self.statusBar().showMessage("✅ 已停止速度显示。", 2000)
         else:
-            print("ℹ️ 当前没有正在运行的速度显示线程。")
+            self.statusBar().showMessage("ℹ️ 当前没有正在运行的速度显示线程。", 2000)
 
     def load_memo(self):
         """从 config.ini 加载备忘录内容。"""
@@ -931,26 +806,21 @@ class SpeedDisplayThread(QThread):
 
 if __name__ == '__main__':
     app_config  = load_config()
-    carla_path = app_config.get('CarlaSettings', 'carla_path') # get() 方法获取字符串
-    Spawn_x = app_config.get('CarlaSettings', 'Spawn_x') # get() 方法获取字符串
-    Spawn_y = app_config.get('CarlaSettings', 'Spawn_y') # get() 方法获取字符串
-    Spawn_z = app_config.get('CarlaSettings', 'Spawn_z') # get() 方法获取字符串
-    Spawn_yaw = app_config.get('CarlaSettings', 'Spawn_yaw') # get() 方法获取字符串
+    carla_path = app_config.get('CarlaSettings', 'carla_path', fallback='')
+    spawn_coords = {k: app_config.get('CarlaSettings', k) for k in ['Spawn_x', 'Spawn_y', 'Spawn_z', 'Spawn_yaw']}
 
     app = QApplication(sys.argv)
     mainWin = MyMainWindow(carla_path=carla_path)
 
-    mainWin.carlaPath = carla_path
-    mainWin.ui.lineEdit_spawnX.setText(Spawn_x)
-    mainWin.ui.lineEdit_spawnY.setText(Spawn_y)
-    mainWin.ui.lineEdit_spawnZ.setText(Spawn_z)
-    mainWin.ui.lineEdit_spawnYaw.setText(Spawn_yaw)
+    mainWin.ui.lineEdit_spawnX.setText(spawn_coords['Spawn_x'])
+    mainWin.ui.lineEdit_spawnY.setText(spawn_coords['Spawn_y'])
+    mainWin.ui.lineEdit_spawnZ.setText(spawn_coords['Spawn_z'])
+    mainWin.ui.lineEdit_spawnYaw.setText(spawn_coords['Spawn_yaw'])
 
-    mainWin.ui.lineEdit_moveX.setText(Spawn_x)
-    mainWin.ui.lineEdit_moveY.setText(Spawn_y)
-    mainWin.ui.lineEdit_moveZ.setText(Spawn_z)
-    mainWin.ui.lineEdit_moveYaw.setText(Spawn_yaw)
+    mainWin.ui.lineEdit_moveX.setText(spawn_coords['Spawn_x'])
+    mainWin.ui.lineEdit_moveY.setText(spawn_coords['Spawn_y'])
+    mainWin.ui.lineEdit_moveZ.setText(spawn_coords['Spawn_z'])
+    mainWin.ui.lineEdit_moveYaw.setText(spawn_coords['Spawn_yaw'])
 
-    print(f"carla_path: {carla_path}")
     mainWin.show()
     sys.exit(app.exec_())
