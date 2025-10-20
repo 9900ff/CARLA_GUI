@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1000, 800)
-        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺 (Gemini 最终版)")
+        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺")
 
         # 设置全局字体和样式
         font = QtGui.QFont("Segoe UI", 9)
