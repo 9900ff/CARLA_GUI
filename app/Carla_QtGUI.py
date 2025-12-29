@@ -82,11 +82,13 @@ class MyMainWindow(QMainWindow):
         self.ui.pushButton_chooseMap.clicked.connect(self.change_map)  # 切换地图
         self.ui.pushButton_setAsyn.clicked.connect(self.set_Asyn_mode)  # 设置同步模式
         self.ui.pushButton_clearAllActor.clicked.connect(self.delete_all_actor)  # 清除所有actor
+        self.ui.pushButton_autoGetSpawnPose.clicked.connect(self.auto_get_SpawnPose)  # 自动获取生成坐标
         self.ui.pushButton_spawnCar.clicked.connect(self.spawn_car)  # 生成车辆
         self.ui.pushButton_spawnCarPygame.clicked.connect(self.spawn_car_pygame)  # 在pygame画面生成车辆
         self.ui.pushButton_refreshCars.clicked.connect(lambda: self.refresh_car_data(refresh_Rolename=True))  # 更新车辆列表
         self.ui.pushButton_connectCar.clicked.connect(self.connect_car)  # 连接车辆
         self.ui.pushButton_setCarPose.clicked.connect(self.set_car_pose)  # 设置车辆位置
+        self.ui.pushButton_setCar_Autopilot.clicked.connect(self.set_car_autopilot)  # 设置车辆自动驾驶
         self.ui.pushButton_clearActor_roleneme.clicked.connect(self.delete_actor_by_id)  # 删除车辆
         self.ui.pushButton_setSpectatorPose_tocar.clicked.connect(self.set_spectator_to_car)  # 设置观测者到车辆
         self.ui.pushButton_setSpectatorPose.clicked.connect(self.set_spectator)  # 设置观测者到指定坐标
@@ -220,14 +222,39 @@ class MyMainWindow(QMainWindow):
             self.statusBar().showMessage("正在连接到 CARLA...", 2000)
             ip = self.ui.lineEdit_IP.text()
             port = int(self.ui.lineEdit_port.text())
+
+            # 1. 建立连接
             self.client = carla.Client(ip, port)
             self.client.set_timeout(10.0)
             self.world = self.client.get_world()
-            self.statusBar().showMessage(f"✅ 成功连接到 CARLA: {ip}:{port}", 5000)
+
+            # 2. --- 新增：获取并刷新地图列表 ---
+            # 获取服务器上的所有可用地图路径
+            available_maps = self.client.get_available_maps()
+
+            # 清空下拉框旧数据
+            self.ui.comboBox_map.clear()
+
+            # 遍历并添加到下拉框
+            # CARLA返回的通常是完整路径 "/Game/Carla/Maps/Town01"，我们需要提取最后一部分 "Town01"
+            sorted_maps = sorted([m.split('/')[-1] for m in available_maps])
+            self.ui.comboBox_map.addItems(sorted_maps)
+
+            # 3. 自动选中当前正在运行的地图
+            current_map_name = self.world.get_map().name.split('/')[-1]
+            index = self.ui.comboBox_map.findText(current_map_name)
+            if index != -1:
+                self.ui.comboBox_map.setCurrentIndex(index)
+
+            # 4. 完成提示
+            self.statusBar().showMessage(f"✅ 成功连接到 CARLA: {ip}:{port} (已加载 {len(available_maps)} 张地图)", 5000)
             self.client.set_timeout(5.0)
+
         except Exception as e:
             self.statusBar().showMessage(f"❌ CARLA 连接失败: {e}", 5000)
             self.client = self.world = None
+            # 连接失败时，为了安全起见，可以清空地图列表或保留默认
+            # self.ui.comboBox_map.clear()
 
     def refresh_world_data(self):
         if not self.world:
@@ -238,6 +265,7 @@ class MyMainWindow(QMainWindow):
             ip_info = self.ui.lineEdit_IP.text()
             port_info = self.ui.lineEdit_port.text()
             mode_info = "同步模式" if self.world.get_settings().synchronous_mode else "异步模式"
+            current_map_name = self.world.get_map().name.split('/')[-1]
 
             spectator = self.world.get_spectator()
             transform = spectator.get_transform()
@@ -248,6 +276,7 @@ class MyMainWindow(QMainWindow):
             all_info = "\n".join([
                 f"已连接上CARLA v{server_version}",
                 f"IP: {ip_info}:{port_info}",
+                f"Map: {current_map_name}",
                 f"模式: {mode_info}",
                 f"\n观测者坐标:\n{spectator_info}"
             ])
@@ -284,12 +313,66 @@ class MyMainWindow(QMainWindow):
         if not self.world:
             self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
             return
+        self.stop_spectator_follow()
         count = 0
         for actor in self.world.get_actors():
             if actor.type_id != 'spectator':
                 actor.destroy()
                 count += 1
         self.statusBar().showMessage(f"✅ 已清除 {count} 个 Actor。", 2000)
+
+    def auto_get_SpawnPose(self):
+        if not self.world:
+            self.statusBar().showMessage("❌ 请先连接到 CARLA", 3000)
+            return
+
+        try:
+            # 1. 获取观测者 (Spectator) 的当前位置
+            spectator = self.world.get_spectator()
+            spec_transform = spectator.get_transform()
+            spec_location = spec_transform.location
+
+            # 2. 获取当前地图
+            carla_map = self.world.get_map()
+
+            # 3. 寻找最近的 Waypoint (路点)
+            # project_to_road=True: 无论观测者在哪里（比如在天上飞），都强制投影到最近的道路几何中心
+            # lane_type=carla.LaneType.Driving: 仅限机动车道，防止吸附到人行道或路肩
+            waypoint = carla_map.get_waypoint(
+                spec_location,
+                project_to_road=True,
+                lane_type=carla.LaneType.Driving
+            )
+
+            if waypoint:
+                # 获取该路点的 Transform (包含坐标 Location 和 朝向 Rotation)
+                target_transform = waypoint.transform
+
+                # 4. 优化 Z 轴高度
+                # 直接使用路面高度可能会导致车轮陷入地面物理碰撞，通常建议抬高 0.3 到 1.0 米
+                target_transform.location.z += 0.3
+
+                # 5. 将数据填入 UI 控件 (保留2位小数)
+                self.ui.lineEdit_spawnX.setText(f"{target_transform.location.x:.2f}")
+                self.ui.lineEdit_spawnY.setText(f"{target_transform.location.y:.2f}")
+                self.ui.lineEdit_spawnZ.setText(f"{target_transform.location.z:.2f}")
+                self.ui.lineEdit_spawnYaw.setText(f"{target_transform.rotation.yaw:.2f}")
+
+                # 同时也填入“移动车辆”的输入框，方便用户直接移动已有车辆
+                self.ui.lineEdit_moveX.setText(f"{target_transform.location.x:.2f}")
+                self.ui.lineEdit_moveY.setText(f"{target_transform.location.y:.2f}")
+                self.ui.lineEdit_moveZ.setText(f"{target_transform.location.z:.2f}")
+                self.ui.lineEdit_moveYaw.setText(f"{target_transform.rotation.yaw:.2f}")
+
+                self.statusBar().showMessage(
+                    f"✅ 已自动吸附到最近道路: (X:{target_transform.location.x:.1f}, Y:{target_transform.location.y:.1f})",
+                    3000)
+            else:
+                self.statusBar().showMessage("⚠️ 当前位置附近未检测到可行驶道路。", 3000)
+
+        except Exception as e:
+            self.statusBar().showMessage(f"❌ 获取坐标失败: {e}", 5000)
+            print(f"Error in auto_get_SpawnPose: {e}")
 
     def spawn_car(self):
         if not self.world:
@@ -459,6 +542,31 @@ class MyMainWindow(QMainWindow):
             self.statusBar().showMessage("✅ 车辆位置已更新。", 2000)
         except Exception as e:
             self.statusBar().showMessage(f"❌ 设置车辆位置失败: {e}", 5000)
+
+    def set_car_autopilot(self):
+        if not self.car:
+            self.statusBar().showMessage("❌ 请先连接到一辆车", 3000)
+            return
+        try:
+            # 1. 获取当前状态
+            # 使用 getattr 检查 self.car 是否有 'autopilot_enabled' 属性
+            # 如果没有（说明是第一次设置），默认视为 False（关闭状态）
+            current_status = getattr(self.car, 'autopilot_enabled', False)
+            # 2. 状态取反 (实现切换功能)
+            new_status = not current_status
+            # 3. 执行设置
+            self.car.set_autopilot(new_status)
+            # 4. 将新状态保存回 vehicle 对象中，以便下次读取
+            self.car.autopilot_enabled = new_status
+
+            # 5. 更新 UI 反馈
+            if new_status:
+                self.statusBar().showMessage(f"🤖 已开启自动驾驶 (Role: {self.car.attributes.get('role_name')})", 3000)
+            else:
+                self.statusBar().showMessage(f"🛑 已禁用自动驾驶，交还控制权", 3000)
+
+        except Exception as e:
+            self.statusBar().showMessage(f"❌ 设置自动驾驶失败: {e}", 5000)
 
     def delete_actor_by_id(self):
         if not self.car:

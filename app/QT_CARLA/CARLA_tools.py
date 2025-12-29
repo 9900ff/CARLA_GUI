@@ -2,7 +2,6 @@
 
 """
 CARLA 工具箱 - 重构美化版
-作者: Gemini
 描述: 一个使用 PyQt5 构建的现代化、响应式布局的 CARLA 模拟器控制工具。
 """
 
@@ -18,7 +17,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1000, 800)
-        MainWindow.setWindowTitle("CARLA 工具箱 by 王则祺")
+        MainWindow.setWindowTitle("CARLA-v2.1 工具箱 by https://github.com/9900ff/CARLA_GUI")
 
         # 设置全局字体和样式
         font = QtGui.QFont("Segoe UI", 9)
@@ -260,12 +259,14 @@ class Ui_MainWindow(object):
         self.lineEdit_spawnY = QLineEdit()
         self.lineEdit_spawnZ = QLineEdit();
         self.lineEdit_spawnYaw = QLineEdit()
+        self.pushButton_autoGetSpawnPose = QPushButton()
         self.pushButton_spawnCar = QPushButton()
         self.pushButton_spawnCar.setObjectName("spawnCarButton")
         self.pushButton_spawnCarPygame = QPushButton()
 
         vehicle_layout.addWidget(QLabel("Role Name:"), 2, 0);
-        vehicle_layout.addWidget(self.lineEdit_spawnname, 2, 1, 1, 3)
+        vehicle_layout.addWidget(self.lineEdit_spawnname, 2, 1, 1, 1)
+        vehicle_layout.addWidget(self.pushButton_autoGetSpawnPose, 2, 3, 1, 1)
         vehicle_layout.addWidget(QLabel("X:"), 3, 0);
         vehicle_layout.addWidget(self.lineEdit_spawnX, 3, 1)
         vehicle_layout.addWidget(QLabel("Y:"), 3, 2);
@@ -282,12 +283,13 @@ class Ui_MainWindow(object):
         line2.setFrameShadow(QFrame.Sunken)
         vehicle_layout.addWidget(line2, 6, 0, 1, 4)
 
-        move_title = QLabel("移动当前车辆")
+        move_title = QLabel("移动、控制当前车辆")
         move_title.setStyleSheet("font-weight: bold;")
         vehicle_layout.addWidget(move_title, 7, 0, 1, 4)
 
         self.pushButton_setCarPose = QPushButton()
         self.pushButton_setCarPose.setObjectName("setCarPoseButton")
+        self.pushButton_setCar_Autopilot = QPushButton()
         self.lineEdit_moveX = QLineEdit();
         self.lineEdit_moveY = QLineEdit()
         self.lineEdit_moveZ = QLineEdit();
@@ -300,7 +302,8 @@ class Ui_MainWindow(object):
         vehicle_layout.addWidget(self.lineEdit_moveZ, 9, 1)
         vehicle_layout.addWidget(QLabel("Yaw:"), 9, 2);
         vehicle_layout.addWidget(self.lineEdit_moveYaw, 9, 3)
-        vehicle_layout.addWidget(self.pushButton_setCarPose, 10, 0, 1, 4)
+        vehicle_layout.addWidget(self.pushButton_setCarPose, 10, 0, 1, 2)
+        vehicle_layout.addWidget(self.pushButton_setCar_Autopilot, 10, 2, 1, 2)
 
         vehicle_layout.setRowStretch(11, 1)
 
@@ -531,12 +534,14 @@ class Ui_MainWindow(object):
         self.pushButton_HUD2d.setText(_translate("MainWindow", "启用2D渲染"))
         self.pushButton_showSpeed.setText(_translate("MainWindow", "显示速度"))
         self.pushButton_hideSpeed.setText(_translate("MainWindow", "关闭速度显示"))
+        self.pushButton_autoGetSpawnPose.setText(_translate("MainWindow", "自动获取出生点"))
         self.pushButton_spawnCar.setText(_translate("MainWindow", "生成车辆"))
         self.pushButton_spawnCarPygame.setText(_translate("MainWindow", "pygame生成"))
         self.pushButton_refreshCars.setToolTip(_translate("MainWindow", "刷新车辆列表"))
         self.pushButton_connectCar.setText(_translate("MainWindow", "连接车辆"))
         self.pushButton_clearActor_roleneme.setText(_translate("MainWindow", "清除此actor"))
         self.pushButton_setCarPose.setText(_translate("MainWindow", "移动车辆到坐标位置"))
+        self.pushButton_setCar_Autopilot.setText(_translate("MainWindow", "切换自动行驶状态"))
         self.pushButton_setSpectatorPose_tocar.setText(_translate("MainWindow", "设置spectator\n到此车位置"))
         self.pushButton_SpectatorFollower_easy.setText(_translate("MainWindow", "spectator\n跟随车辆(标准版)"))
         self.pushButton_StopSpectatorFollower.setText(_translate("MainWindow", "停止spectator\n跟随车辆"))
@@ -556,7 +561,7 @@ class Ui_MainWindow(object):
         self.lineEdit_port.setText("2000")
         self.textBrowser_connectState.setHtml("<p>未连接</p>")
 
-        maps = ["gaoshu3800"] + [f"Town{i:02}" for i in range(1, 13)]
+        maps = [f"Town{i:02}" for i in range(1, 13)]
         self.comboBox_map.addItems(maps)
 
         weathers = [
