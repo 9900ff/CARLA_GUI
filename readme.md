@@ -37,6 +37,12 @@ b站视频介绍：https://www.bilibili.com/video/BV1mfv2BwETA/
     * **2D HUD**：支持启动无渲染模式下的 2D 信息面板。（需设置本地 Python 路径）。
     * **配置记忆**：自动保存上次的路径设置、生成坐标和备忘录信息至 `config.ini`。
 
+<p align="center">
+    <img src="figs/fig1.png" width="300" title="CarlaGUI 主界面">
+    <img src="figs/fig2.png" width="300" title="CarlaGUI 主界面">
+    <img src="figs/fig3.png" width="300" title="CarlaGUI 主界面">
+</p>
+
 ## 🛠️ 安装与运行
 
 ### 方式一：直接运行（推荐）
