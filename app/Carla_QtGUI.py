@@ -909,7 +909,7 @@ class SpectatorFollowerThread_easy(QThread): # 带运镜的跟随
     def run(self):
         while self._running:
             try:
-                self.world.wait_for_tick()
+                self.world.wait_for_tick(60.0)
                 self.follow_once()
             except Exception as e:
                 print(f"线程运行异常：{e}")
