@@ -87,7 +87,3 @@ b站视频介绍：https://www.bilibili.com/video/BV1mfv2BwETA/
 * **Bug 提示**：本项目目前为个人开发版本，部分功能可能存在 Bug，欢迎提 Issue 反馈。
 * **版本兼容**：建议使用 CARLA 0.9.15 版本，不同版本未测试
 * **Pygame 路径**：如果点击“Pygame 生成车辆”无反应，请务必检查“Python 路径”设置是否正确，且该 Python 环境已安装 `pygame` 库。
-
-## 📜 开源协议
-
-本项目采用 [MIT License](LICENSE) 开源协议。
