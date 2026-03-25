@@ -4,7 +4,6 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![CARLA](https://img.shields.io/badge/CARLA-0.9.x-green)
-![License](https://img.shields.io/badge/License-MIT-orange)
 
 ## 📖 项目简介
 
